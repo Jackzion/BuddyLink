@@ -6,8 +6,8 @@ package com.ziio.buddylink.constant;
 public interface RedisConstant {
     String SYSTEM_ID = "buddy:team:join";
     String USER_JOIN_TEAM = "buddy:team:join:";
-    String USER_GEO_KEY = "homiemacthing:user:geo";
-    String USER_ADD_KEY = "homiematching:user:add";
+    String USER_GEO_KEY = "buddy:user:geo";
+    String USER_ADD_KEY = "buddy:user:add";
     String USER_RECOMMEND_KEY = "buddy:user:recommend";
 
     String REDIS_LIMITER_REGISTER = "buddy:limiter:register:";

@@ -1,20 +1,27 @@
 package com.ziio.buddylink.service.impl;
 
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.github.rholder.retry.RetryException;
 import com.github.rholder.retry.Retryer;
 import com.ziio.buddylink.common.ErrorCode;
 import com.ziio.buddylink.constant.RedisConstant;
+import com.ziio.buddylink.constant.UserConstant;
 import com.ziio.buddylink.exception.BusinessException;
 import com.ziio.buddylink.manager.RedisBloomFilter;
 import com.ziio.buddylink.manager.RedisLimiterManager;
+import com.ziio.buddylink.model.VO.UserVO;
 import com.ziio.buddylink.model.domain.User;
+import com.ziio.buddylink.model.request.UserEditRequest;
 import com.ziio.buddylink.model.request.UserRegisterRequest;
 import com.ziio.buddylink.service.UserService;
 import com.ziio.buddylink.mapper.UserMapper;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.BeanUtils;
+import org.springframework.data.geo.Distance;
 import org.springframework.data.geo.Point;
+import org.springframework.data.redis.connection.RedisGeoCommands;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -22,11 +29,13 @@ import org.springframework.util.DigestUtils;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static com.ziio.buddylink.constant.UserConstant.USER_LOGIN_STATE;
 
@@ -54,6 +63,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      * 盐值为'ziio'，用以混淆密码
      */
     private static final String SALT = "ziio";
+
+    // 表示 Redis 是否有 recommend user 数据
+    private boolean redisHasData = false;
 
     @Override
     public long userRegister(HttpServletRequest request, UserRegisterRequest userRegisterRequest) {
@@ -185,12 +197,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         return safetyUser;
     }
 
+    @Override
+    public int userLogout(HttpServletRequest request) {
+        request.getSession().removeAttribute(USER_LOGIN_STATE);
+        return 1;
+    }
+
     /**
      * 用户脱敏
      * @param originUser 用户信息
      * @return 用户简略信息
      */
-    private User getSafetyUser(User originUser) {
+    public User getSafetyUser(User originUser) {
         if (originUser == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR);
         }
@@ -211,6 +229,167 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         safetyUser.setDimension(originUser.getDimension());
         return safetyUser;
     }
+
+    @Override
+    public User getLoginUser(HttpServletRequest request) {
+        if (request == null) {
+            return null;
+        }
+        Object userObj = request.getSession().getAttribute(UserConstant.USER_LOGIN_STATE);
+        if (userObj == null) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN);
+        }
+        return (User) userObj;
+    }
+
+    @Override
+    public boolean isAdmin(HttpServletRequest request) {
+        Object userObj = request.getSession().getAttribute(UserConstant.USER_LOGIN_STATE);
+        User user = (User) userObj;
+        return user != null && user.getUserRole() == UserConstant.ADMIN_ROLE;
+    }
+
+    @Override
+    public boolean isAdmin(User user) {
+        return user != null && user.getUserRole() == UserConstant.ADMIN_ROLE;
+    }
+
+    @Override
+    public int updateUser(UserEditRequest userEditRequest, User loginUser) {
+        long userId = userEditRequest.getId();
+        // 如果是管理员允许更新任意用户信息
+        if (userId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        if (this.getById(userId) == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, "用户不存在");
+        }
+        // todo 补充更多校验，如果用户传的值只有id，没有其它参数则不执行更新操作
+        // 如果是管理员，允许更新任意用户信息，只允许更新当前用户信息
+        if (!isAdmin(loginUser) && userId != loginUser.getId()) {
+            throw new BusinessException(ErrorCode.NO_AUTH);
+        }
+        User oldUser = this.baseMapper.selectById(userId);
+        if (oldUser == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, "用户不存在");
+        }
+        Double longitude = userEditRequest.getLongitude();
+        Double dimension = userEditRequest.getDimension();
+        if (longitude != null && (longitude > 180 || longitude < -180)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "坐标经度不合法");
+        }
+        if (dimension != null && (dimension > 90 || dimension < -90)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "坐标维度不合法");
+        }
+        User user = new User();
+        BeanUtils.copyProperties(userEditRequest, user);
+        // 注：前端传来的 tag list 处理（无法 copy 更新）
+        List<String> tags = userEditRequest.getTags();
+        if (!CollectionUtils.isEmpty(tags)) {
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.append('[');
+            for (int i = 0; i < tags.size(); i++) {
+                stringBuilder.append('"').append(tags.get(i)).append('"');
+                if (i < tags.size() - 1) {
+                    stringBuilder.append(',');
+                }
+            }
+            stringBuilder.append(']');
+            user.setTags(stringBuilder.toString());
+        }
+        int i = this.baseMapper.updateById(user);
+        if (i > 0) {
+            Set<String> keys = stringRedisTemplate.keys(RedisConstant.USER_RECOMMEND_KEY + ":*");
+            for (String key : keys) {
+                try {
+                    retryer.call(() -> stringRedisTemplate.delete(key));
+                } catch (ExecutionException e) {
+                    log.error("用户修改信息后删除缓存重试时失败");
+                    throw new BusinessException(ErrorCode.SYSTEM_ERROR);
+                } catch (RetryException e) {
+                    log.error("用户修改信息后删除缓存达到最大重试次数或超过时间限制");
+                    throw new BusinessException(ErrorCode.SYSTEM_ERROR);
+                }
+            }
+        }
+        return i;
+    }
+
+    @Override
+    public List<UserVO> recommendUsers(long pageSize, long pageNum, HttpServletRequest request) {
+        User loginUser = this.getLoginUser(request);
+        String redisKey = RedisConstant.USER_RECOMMEND_KEY + ":" + loginUser.getId();
+        // 如果缓存中有数据，直接读缓存
+        long start = (pageNum - 1) * pageSize;
+        long end = start + pageSize - 1;
+        List<String> userVOJsonListRedis = stringRedisTemplate.opsForList().range(redisKey, start, end);
+        // 将查询的缓存反序列化为 User 对象
+        List<UserVO> userVOList = new ArrayList<>();
+        userVOList = userVOJsonListRedis.stream()
+                .map(UserServiceImpl::transferToUserVO).collect(Collectors.toList());
+        // 判断 Redis 中是否有数据
+        redisHasData = !CollectionUtils.isEmpty(stringRedisTemplate.opsForList().range(redisKey, 0, -1));
+        if (!CollectionUtils.isEmpty(userVOJsonListRedis)) {
+            return userVOList;
+        }
+        // 缓存无数据再走数据库 ， 先写入缓存，在从缓存中拿数据
+        if (!redisHasData) {
+            // 无缓存，查询数据库，并将数据写入缓存
+            QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+            queryWrapper.ne("id", loginUser.getId());
+            List<User> userList = this.list(queryWrapper);
+
+            String redisUserGeoKey = RedisConstant.USER_GEO_KEY;
+
+            // 将User转换为UserVO，在进行序列化
+            userVOList = userList.stream()
+                    .map(user -> {
+                        // 查询距离
+                        Distance distance = stringRedisTemplate.opsForGeo().distance(redisUserGeoKey,
+                                String.valueOf(loginUser.getId()), String.valueOf(user.getId()),
+                                RedisGeoCommands.DistanceUnit.KILOMETERS);
+                        Double value = distance.getValue();
+                        // 创建UserVO对象并设置属性
+                        UserVO userVO = new UserVO();
+                        userVO.setId(user.getId());
+                        userVO.setUsername(user.getUsername());
+                        userVO.setUserAccount(user.getUserAccount());
+                        userVO.setAvatarUrl(user.getAvatarUrl());
+                        userVO.setGender(user.getGender());
+                        userVO.setProfile(user.getProfile());
+                        userVO.setPhone(user.getPhone());
+                        userVO.setEmail(user.getEmail());
+                        userVO.setUserStatus(user.getUserStatus());
+                        userVO.setCreateTime(user.getCreateTime());
+                        userVO.setUpdateTime(user.getUpdateTime());
+                        userVO.setUserRole(user.getUserRole());
+                        userVO.setTags(user.getTags());
+                        if (value != null) {
+                            userVO.setDistance(value); // 设置距离值
+                        } else {
+                            userVO.setDistance(0.0);
+                        }
+                        return userVO;
+                    })
+                    .collect(Collectors.toList());
+            // 将序列化的 List 写入缓存
+            List<String> userVOJsonList = userVOList.stream().map(JSONUtil::toJsonStr).collect(Collectors.toList());
+            try {
+                stringRedisTemplate.opsForList().rightPushAll(redisKey, userVOJsonList);
+            } catch (Exception e) {
+                log.error("redis set key error", e);
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "缓存写入失败");
+            }
+        }
+        userVOList = stringRedisTemplate.opsForList().range(redisKey, start, end)
+                .stream().map(UserServiceImpl::transferToUserVO).collect(Collectors.toList());
+        return userVOList;
+    }
+
+    private static UserVO transferToUserVO(String jsonStr) {
+        return JSONUtil.toBean(jsonStr, UserVO.class);
+    }
+
 }
 
 
