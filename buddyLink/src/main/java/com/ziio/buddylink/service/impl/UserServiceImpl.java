@@ -32,6 +32,7 @@ import org.springframework.data.geo.*;
 import org.springframework.data.redis.connection.RedisGeoCommands;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.DigestUtils;
 
@@ -82,6 +83,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     private boolean redisHasData = false;
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public long userRegister(HttpServletRequest request, UserRegisterRequest userRegisterRequest) {
         String userAccount = userRegisterRequest.getUserAccount();
         String userPassword = userRegisterRequest.getUserPassword();
