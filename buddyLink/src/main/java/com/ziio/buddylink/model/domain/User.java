@@ -126,6 +126,12 @@ public class User implements Serializable {
      */
     private Long fanNum;
 
+    /**
+     * 积分
+     */
+    private Integer score;
+
+
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
 }

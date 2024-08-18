@@ -1,4 +1,4 @@
-package com.ziio.buddylink.model.VO;
+package com.ziio.buddylink.model.vo;
 
 import lombok.Data;
 

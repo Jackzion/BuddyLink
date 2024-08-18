@@ -2,6 +2,9 @@ package com.ziio.buddylink.mapper;
 
 import com.ziio.buddylink.model.domain.User;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Select;
+
+import java.util.List;
 
 /**
 * @author Ziio
@@ -11,6 +14,12 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 */
 public interface UserMapper extends BaseMapper<User> {
 
+    long hasBlogCount(long userId);
+
+    long hasFollowerCount(long userId);
+
+    @Select("select * from user where score >= 0 order by score desc")
+    List<User> selectUserTop10Score();
 }
 
 

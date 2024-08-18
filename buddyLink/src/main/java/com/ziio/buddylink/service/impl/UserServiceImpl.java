@@ -5,22 +5,30 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.github.rholder.retry.RetryException;
 import com.github.rholder.retry.Retryer;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.ziio.buddylink.common.ErrorCode;
 import com.ziio.buddylink.constant.RedisConstant;
 import com.ziio.buddylink.constant.UserConstant;
 import com.ziio.buddylink.exception.BusinessException;
 import com.ziio.buddylink.manager.RedisBloomFilter;
 import com.ziio.buddylink.manager.RedisLimiterManager;
-import com.ziio.buddylink.model.VO.UserVO;
+import com.ziio.buddylink.manager.SignInManager;
+import com.ziio.buddylink.model.vo.SignInInfoVO;
+import com.ziio.buddylink.model.vo.UserInfoVO;
+import com.ziio.buddylink.model.vo.UserVO;
 import com.ziio.buddylink.model.domain.User;
 import com.ziio.buddylink.model.request.UserEditRequest;
 import com.ziio.buddylink.model.request.UserRegisterRequest;
 import com.ziio.buddylink.service.UserService;
 import com.ziio.buddylink.mapper.UserMapper;
+import com.ziio.buddylink.utils.AlgorithmUtils;
+import com.ziio.buddylink.utils.DateUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.math3.util.Pair;
 import org.springframework.beans.BeanUtils;
-import org.springframework.data.geo.Distance;
-import org.springframework.data.geo.Point;
+import org.springframework.data.geo.*;
 import org.springframework.data.redis.connection.RedisGeoCommands;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -31,6 +39,7 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
@@ -45,6 +54,7 @@ import static com.ziio.buddylink.constant.UserConstant.USER_LOGIN_STATE;
 * @createDate 2024-08-16 15:40:56
 */
 @Service
+@Slf4j
 public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     implements UserService{
 
@@ -56,6 +66,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Resource
     private RedisBloomFilter redisBloomFilter;
+
+    @Resource
+    private SignInManager signInManager;
+
 
     @Resource
     private Retryer<Boolean> retryer;
@@ -386,9 +400,193 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         return userVOList;
     }
 
+    @Override
+    public List<UserVO> matchUsers(long num, User loginUser) {
+        // 搜索 all users 的 id and tags 字段
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.isNotNull("tags");
+        queryWrapper.ne("id", loginUser.getId());
+        queryWrapper.select("id", "tags");
+        List<User> userList = this.list(queryWrapper);
+        // tags json 转 list
+        String tags = loginUser.getTags();
+        Gson gson = new Gson();
+        List<String> myTagList = gson.fromJson(tags, new TypeToken<List<String>>() {
+        }.getType());
+        // 用户列表的下表 => 相似度'
+        List<Pair<User, Long>> list = new ArrayList<>();
+        // 依次计算当前用户和所有用户的相似度
+        for (User user : userList) {
+            String userTags = user.getTags();
+            //无标签的 或当前用户为自己
+            if (StringUtils.isBlank(userTags) || user.getId() == loginUser.getId()) {
+                continue;
+            }
+            List<String> userTagList = gson.fromJson(userTags, new TypeToken<List<String>>() {
+            }.getType());
+            //计算分数
+            long distance = AlgorithmUtils.minDistance(myTagList, userTagList);
+            list.add(new Pair<>(user, distance));
+        }
+        //按编辑距离有小到大排序
+        List<Pair<User, Long>> topUserPairList = list.stream()
+                .sorted((a, b) -> (int) (a.getValue() - b.getValue()))
+                .limit(num)
+                .collect(Collectors.toList());
+        //转换为 userId list
+        List<Long> userIds = topUserPairList.stream().map(pari -> pari.getKey().getId()).collect(Collectors.toList());
+        // 查询 user 完整信息
+        QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
+        userQueryWrapper.in("id", userIds);
+        Map<Long, List<User>> userIdUserListMap = this.list(userQueryWrapper).stream()
+                .map(user -> getSafetyUser(user))
+                .collect(Collectors.groupingBy(User::getId));
+
+        List<User> finalUserList = new ArrayList<>();
+        for (Long userId : userIds) {
+            finalUserList.add(userIdUserListMap.get(userId).get(0));
+        }
+        // 补充 geo 信息
+        String redisUserGeoKey = RedisConstant.USER_GEO_KEY;
+        List<UserVO> finalUsersVOList = finalUserList.stream().map(user -> {
+            Distance distance = stringRedisTemplate.opsForGeo().distance(redisUserGeoKey, String.valueOf(loginUser.getId()), String.valueOf(user.getId()), RedisGeoCommands.DistanceUnit.KILOMETERS);
+            // 封装为 userVo
+            UserVO userVO = new UserVO();
+            userVO.setId(user.getId());
+            userVO.setUsername(user.getUsername());
+            userVO.setUserAccount(user.getUserAccount());
+            userVO.setAvatarUrl(user.getAvatarUrl());
+            userVO.setGender(user.getGender());
+            userVO.setProfile(user.getProfile());
+            userVO.setPhone(user.getPhone());
+            userVO.setEmail(user.getEmail());
+            userVO.setUserStatus(user.getUserStatus());
+            userVO.setCreateTime(user.getCreateTime());
+            userVO.setUpdateTime(user.getUpdateTime());
+            userVO.setUserRole(user.getUserRole());
+            userVO.setTags(user.getTags());
+            userVO.setDistance(distance.getValue());
+            return userVO;
+        }
+        ).collect(Collectors.toList());
+        return finalUsersVOList;
+    }
+
+    @Override
+    public List<UserVO> searchNearby(int radius, User loginUser) {
+        String geoKey = RedisConstant.USER_GEO_KEY;
+        String userId = String.valueOf(loginUser.getId());
+        Double longitude = loginUser.getLongitude();
+        Double dimension = loginUser.getDimension();
+        if (longitude == null || dimension == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, "登录用户经纬度参数为空");
+        }
+        Distance geoRadius = new Distance(radius, RedisGeoCommands.DistanceUnit.KILOMETERS);
+        Circle circle = new Circle(new Point(longitude, dimension), geoRadius);
+        // 从 redis 中查找
+        GeoResults<RedisGeoCommands.GeoLocation<String>> results = stringRedisTemplate.opsForGeo().radius(geoKey, circle);
+        List<Long> userIdList = new ArrayList<>();
+        // 拆分 redisGeoCommand
+        for (GeoResult<RedisGeoCommands.GeoLocation<String>> result : results){
+            String id = result.getContent().getName();
+            if (!userId.equals(id)) {
+                userIdList.add(Long.parseLong(id));
+            }
+        }
+        // 封装为 userVo
+        List<UserVO> userVOList = userIdList.stream().map(id -> {
+            UserVO userVO = new UserVO();
+            User user = this.getById(id);
+            BeanUtils.copyProperties(user, userVO);
+            // 补充 distance
+            Distance distance = stringRedisTemplate.opsForGeo().distance(geoKey, userId, String.valueOf(id), RedisGeoCommands.DistanceUnit.KILOMETERS);
+            userVO.setDistance(distance.getValue());
+            return userVO;
+        }).collect(Collectors.toList());
+        return userVOList;
+
+    }
+
+    @Override
+    public long hasBlogCount(long userId) {
+        if (userId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        return this.baseMapper.hasBlogCount(userId);
+    }
+
+    @Override
+    public long hasFollowerCount(long followeeId) {
+        if (followeeId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        return this.baseMapper.hasFollowerCount(followeeId);
+    }
+
+    @Override
+    public UserInfoVO getUserInfo(HttpServletRequest request) {
+        User loginUser = this.getLoginUser(request);
+        long userId = loginUser.getId();
+        UserInfoVO userInfoVO = new UserInfoVO();
+        userInfoVO.setBlogNum(this.hasBlogCount(userId));
+        userInfoVO.setFollowNum(this.hasFollowerCount(userId));
+        userInfoVO.setStarBlogNum(this.starBlogNum(userId));
+        userInfoVO.setLikeBlogNum(this.likeBlogNum(userId));
+        return userInfoVO;
+    }
+
+    // 从 redis 中获得 blog likes 数量
+    private Long likeBlogNum(long userId) {
+        return stringRedisTemplate.opsForSet().size(RedisConstant.REDIS_USER_LIKE_BLOG_KEY + userId);
+    }
+
+    // 从 redis 中获得 blog stars 数量
+    public long starBlogNum(long userId) {
+        return stringRedisTemplate.opsForSet().size(RedisConstant.REDIS_USER_STAR_BLOG_KEY + userId);
+    }
+
+    @Override
+    public List<User> getUsersScoreRank() {
+        // 查积分最高的前十位
+        List<User> userList = this.baseMapper.selectUserTop10Score();
+        return userList;
+    }
+
+    @Override
+    public boolean userSigIn(HttpServletRequest request) {
+        User loginUser = this.getLoginUser(request);
+        long userId = loginUser.getId();
+        String key = RedisConstant.USER_SIGNIN_KEY + DateUtils.getNowYear() + ":" + userId;
+        // 判断是否已经签到
+        if (signInManager.isSignIn(key)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "您今天已经签过到了");
+        }
+        // 签到
+        signInManager.signIn(key);
+        // 签到增加分数
+        loginUser = this.getById(loginUser.getId());
+        User user = new User();
+        user.setId(userId);
+        user.setScore(loginUser.getScore() + 10);
+        boolean b = this.updateById(user);
+        if (!b) {
+            log.error("用户：{} 签到增加积分失败", userId);
+        }
+        return b;
+    }
+
+    @Override
+    public SignInInfoVO getSignedDates(HttpServletRequest request) {
+        User loginUser = this.getLoginUser(request);
+        long userId = loginUser.getId();
+        String key = RedisConstant.USER_SIGNIN_KEY + DateUtils.getNowYear() + ":" + userId;
+        return signInManager.getSignInInfo(key);
+    }
+
     private static UserVO transferToUserVO(String jsonStr) {
         return JSONUtil.toBean(jsonStr, UserVO.class);
     }
+
 
 }
 

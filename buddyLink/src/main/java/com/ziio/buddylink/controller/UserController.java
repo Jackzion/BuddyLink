@@ -6,12 +6,14 @@ import com.ziio.buddylink.common.ErrorCode;
 import com.ziio.buddylink.common.ResultUtils;
 import com.ziio.buddylink.constant.UserConstant;
 import com.ziio.buddylink.exception.BusinessException;
+import com.ziio.buddylink.model.vo.SignInInfoVO;
+import com.ziio.buddylink.model.vo.UserInfoVO;
 import com.ziio.buddylink.model.domain.User;
 import com.ziio.buddylink.model.request.DeleteRequest;
 import com.ziio.buddylink.model.request.UserEditRequest;
 import com.ziio.buddylink.model.request.UserLoginRequest;
 import com.ziio.buddylink.model.request.UserRegisterRequest;
-import com.ziio.buddylink.model.VO.UserVO;
+import com.ziio.buddylink.model.vo.UserVO;
 import com.ziio.buddylink.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -131,5 +133,73 @@ public class UserController {
         }
         List<UserVO> userVOS = userService.recommendUsers(pageSize, pageNum, request);
         return ResultUtils.success(userVOS);
+    }
+
+    /**
+     * 推荐最匹配的用户
+     *
+     * @return
+     */
+    @GetMapping("/match")
+    public BaseResponse<List<UserVO>> matchUsers(long num, HttpServletRequest request) {
+        if (num <= 0 || num > 20) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        User loginUser = userService.getLoginUser(request);
+        return ResultUtils.success(userService.matchUsers(num, loginUser));
+    }
+
+    /**
+     * 搜索附近用户
+     */
+    @GetMapping("/searchNearby")
+    public BaseResponse<List<UserVO>> searchNearby(int radius, HttpServletRequest request) {
+        if (radius <= 0 || radius > 10000) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        User user = userService.getLoginUser(request);
+        User loginUser = userService.getById(user.getId());
+        List<UserVO> userVOList = userService.searchNearby(radius, loginUser);
+        return ResultUtils.success(userVOList);
+    }
+
+    @GetMapping("/blog/count")
+    public BaseResponse<Long> loginUserBlogCount(HttpServletRequest request) {
+        User loginUser = userService.getLoginUser(request);
+        long userId = loginUser.getId();
+        long count = userService.hasBlogCount(userId);
+        return ResultUtils.success(count);
+    }
+
+    @GetMapping("/follower/count")
+    public BaseResponse<Long> loginUserFollowerCount(HttpServletRequest request) {
+        User loginUser = userService.getLoginUser(request);
+        long userId = loginUser.getId();
+        long count = userService.hasFollowerCount(userId);
+        return ResultUtils.success(count);
+    }
+
+    @GetMapping("/info/get")
+    public BaseResponse<UserInfoVO> getUserInfo(HttpServletRequest request) {
+        UserInfoVO userInfoVO = userService.getUserInfo(request);
+        return ResultUtils.success(userInfoVO);
+    }
+
+    @GetMapping("/score/rank")
+    public BaseResponse<List<User>> getUsersScoreRank() {
+        List<User> users = userService.getUsersScoreRank();
+        return ResultUtils.success(users);
+    }
+
+    @PostMapping("/sign/in")
+    public BaseResponse<Boolean> userSigIn(HttpServletRequest request) {
+        boolean b = userService.userSigIn(request);
+        return ResultUtils.success(b);
+    }
+
+    @GetMapping("/sign/in/info/get")
+    public BaseResponse<SignInInfoVO> getSignedDates(HttpServletRequest request) {
+        SignInInfoVO signInInfoVO = userService.getSignedDates(request);
+        return ResultUtils.success(signInInfoVO);
     }
 }

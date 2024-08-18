@@ -1,8 +1,8 @@
 package com.ziio.buddylink.service;
 
-import com.ziio.buddylink.common.ErrorCode;
-import com.ziio.buddylink.exception.BusinessException;
-import com.ziio.buddylink.model.VO.UserVO;
+import com.ziio.buddylink.model.vo.SignInInfoVO;
+import com.ziio.buddylink.model.vo.UserInfoVO;
+import com.ziio.buddylink.model.vo.UserVO;
 import com.ziio.buddylink.model.domain.User;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.ziio.buddylink.model.request.UserEditRequest;
@@ -79,5 +79,60 @@ public interface UserService extends IService<User> {
      */
     int updateUser(UserEditRequest userEditRequest, User loginUser);
 
+    /**
+     * 分页获取用户
+     * @param pageSize
+     * @param pageNum
+     * @param request
+     * @return
+     */
     List<UserVO> recommendUsers(long pageSize, long pageNum, HttpServletRequest request);
+
+    /**
+     * 按 tags 推荐指定数量的用户
+     * @param num 返回个数
+     * @param loginUser 用户
+     * @return
+     */
+    List<UserVO> matchUsers(long num, User loginUser);
+
+    /**
+     * 查询附件用户
+     * @param radius 半径距离
+     * @param loginUser 用户
+     * @return
+     */
+    List<UserVO> searchNearby(int radius, User loginUser);
+
+    /**
+     * 查询用户博客总数量
+     * @param userId
+     * @return
+     */
+    long hasBlogCount(long userId);
+
+    /**
+     * 查询用户粉丝数量
+     * @param userId
+     * @return
+     */
+    long hasFollowerCount(long userId);
+
+    /**
+     * 根据 session 查询用户 blogs and stars 信息
+     * @param request
+     * @return
+     */
+    UserInfoVO getUserInfo(HttpServletRequest request);
+
+    /**
+     * 获取数据库 score 排名前十的 users
+     * @return
+     */
+    List<User> getUsersScoreRank();
+
+
+    boolean userSigIn(HttpServletRequest request);
+
+    SignInInfoVO getSignedDates(HttpServletRequest request);
 }
