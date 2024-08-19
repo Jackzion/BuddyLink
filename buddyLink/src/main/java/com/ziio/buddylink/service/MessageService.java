@@ -13,4 +13,6 @@ public interface MessageService extends IService<Message> {
     public boolean addStarMessage(Message message);
 
     public boolean addLikeMessage(Message message);
+
+    public boolean addFollowMessage(Message message);
 }

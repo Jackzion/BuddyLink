@@ -75,7 +75,31 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message>
             message.setText(user.getUsername() + text + blog.getTitle());
             save = this.save(message);
             if (!save) {
-                log.error("用户：{} 收藏：{} 的博客：{} 后，添加收藏消息到消息表失败了！", fromId, toId, blogId);
+                log.error("用户：{} 点赞：{} 的博客：{} 后，添加点赞消息到消息表失败了！", fromId, toId, blogId);
+            }
+        }
+        return save;
+    }
+
+    @Override
+    public boolean addFollowMessage(Message message) {
+        // 获取参数
+        Long fromId = message.getFromId();
+        Long toId = message.getToId();
+        String text = message.getText();
+        User user = userService.getById(fromId);
+        // 检查信息是否已经存在，且未读
+        Long count = this.lambdaQuery().eq(Message::getToId, toId).eq(Message::getFromId, fromId)
+                .eq(Message::getIsRead, 0).eq(Message::getType, 2).count();
+        boolean save = false;
+        // 不存在，则保存至数据库
+        if(count!=null && count<1){
+            // 补充用户信息
+            message.setAvatarUrl(user.getAvatarUrl());
+            message.setText(user.getUsername() + text );
+            save = this.save(message);
+            if (!save) {
+                log.error("用户：{} 关注：{}  后，添加关注消息到消息表失败了！", fromId, toId);
             }
         }
         return save;
