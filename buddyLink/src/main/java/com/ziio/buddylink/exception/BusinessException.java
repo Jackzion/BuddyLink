@@ -4,7 +4,6 @@ import com.ziio.buddylink.common.ErrorCode;
 import lombok.Data;
 
 // 自定义异常
-@Data
 public class BusinessException extends RuntimeException {
     private final int code;
     private final String description;
@@ -25,5 +24,13 @@ public class BusinessException extends RuntimeException {
         super(errorCode.getMessage());
         this.code= errorCode.getCode();
         this.description= description;
+    }
+
+    public int getCode() {
+        return code;
+    }
+
+    public String getDescription() {
+        return description;
     }
 }
