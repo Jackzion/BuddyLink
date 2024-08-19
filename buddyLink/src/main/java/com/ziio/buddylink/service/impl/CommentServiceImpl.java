@@ -121,8 +121,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment>
             throw new BusinessException(ErrorCode.NULL_ERROR, "评论不存在");
         }
         return userId == comment.getUserId();
-    }
-}
+    }}
 
 
 
