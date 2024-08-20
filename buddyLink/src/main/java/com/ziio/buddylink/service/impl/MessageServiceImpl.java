@@ -1,18 +1,30 @@
 package com.ziio.buddylink.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.OrderItem;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.ziio.buddylink.common.ErrorCode;
+import com.ziio.buddylink.exception.BusinessException;
 import com.ziio.buddylink.model.domain.Blog;
 import com.ziio.buddylink.model.domain.Message;
 import com.ziio.buddylink.model.domain.User;
+import com.ziio.buddylink.model.request.MessageQueryRequest;
+import com.ziio.buddylink.model.vo.InteractionMessageVO;
+import com.ziio.buddylink.model.vo.MessageVO;
 import com.ziio.buddylink.service.BlogService;
 import com.ziio.buddylink.service.MessageService;
 import com.ziio.buddylink.mapper.MessageMapper;
 import com.ziio.buddylink.service.UserService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
 * @author Ziio
@@ -103,6 +115,55 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message>
             }
         }
         return save;
+    }
+
+    @Override
+    public InteractionMessageVO listInteractionMessage(HttpServletRequest request) {
+        User loginUser = userService.getLoginUser(request);
+        long userId = loginUser.getId();
+        // 查找数据库,找未读信息
+        long starMessageNum = this.baseMapper.selectCount(new QueryWrapper<Message>()
+                .eq("toId", userId).eq("type", 0).eq("isRead", 0));
+        long likeMessageNum = this.baseMapper.selectCount(new QueryWrapper<Message>()
+                .eq("toId", userId).eq("type", 1).eq("isRead", 0));
+        long followMessageNum = this.baseMapper.selectCount(new QueryWrapper<Message>()
+                .eq("toId", userId).eq("type", 2).eq("isRead", 0));
+        return new InteractionMessageVO(starMessageNum,likeMessageNum,followMessageNum);
+    }
+
+    @Override
+    public List<MessageVO> listMessages(MessageQueryRequest messageQueryRequest, HttpServletRequest request) {
+        // 提取效验参数
+        Integer type = messageQueryRequest.getType();
+        User loginUser = userService.getLoginUser(request);
+        if (type == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        // 查询 message 数据库
+        // todo : 改为 page 查询 ？？
+        QueryWrapper<Message> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("toId", loginUser.getId());
+        queryWrapper.eq("type", type);
+        List<Message> messageList = this.list(queryWrapper);
+        // 转换为 massageVo
+        List<MessageVO> messageVOList = messageList.stream().map(message -> {
+            MessageVO messageVO = new MessageVO();
+            BeanUtils.copyProperties(message, messageVO);
+            return messageVO;
+        }).collect(Collectors.toList());
+        // 查询的消息变为已读 , 并更新数据库
+        // todo 可改为 MQ 执行
+        List<Message> readedMessageList = messageList.stream().map(message -> {
+            Message readedMessage = new Message();
+            readedMessage.setId(message.getId());
+            readedMessage.setIsRead(1);
+            return readedMessage;
+        }).collect(Collectors.toList());
+        boolean b = this.updateBatchById(readedMessageList, 100);
+        if (!b) {
+            log.error("用户：{} 读取消息后将消息改为已读失败了！", loginUser.getId());
+        }
+        return messageVOList;
     }
 }
 

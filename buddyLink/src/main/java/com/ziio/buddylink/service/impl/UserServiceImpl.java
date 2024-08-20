@@ -297,6 +297,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         if (dimension != null && (dimension > 90 || dimension < -90)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "坐标维度不合法");
         }
+        // todo : userAvatar 供用户选择头像更改, 头像 url 应该在前端
         User user = new User();
         BeanUtils.copyProperties(userEditRequest, user);
         // 注：前端传来的 tag list 处理（无法 copy 更新）
