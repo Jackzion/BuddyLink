@@ -2,11 +2,13 @@ package com.ziio.buddylink.model.vo;
 
 import lombok.Data;
 
+import java.io.Serializable;
+
 /**
  * blog 页面作者视图
  */
 @Data
-public class BlogUserVO {
+public class BlogUserVO implements Serializable {
     /**
      * id
      */

@@ -2,7 +2,9 @@ package com.ziio.buddylink.model.request;
 
 import lombok.Data;
 
+import java.io.Serializable;
+
 @Data
-public class FriendQueryRequest {
+public class FriendQueryRequest implements Serializable {
     private String searchParam;
 }
