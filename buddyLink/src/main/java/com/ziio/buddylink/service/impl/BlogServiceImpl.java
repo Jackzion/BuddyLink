@@ -2,6 +2,7 @@ package com.ziio.buddylink.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ziio.buddylink.common.ErrorCode;
 import com.ziio.buddylink.constant.RedisConstant;
@@ -15,8 +16,14 @@ import com.ziio.buddylink.model.request.*;
 import com.ziio.buddylink.model.vo.BlogUserVO;
 import com.ziio.buddylink.model.vo.BlogVO;
 import com.ziio.buddylink.model.vo.CommentVO;
+import com.ziio.buddylink.model.vo.UserBlogVO;
 import com.ziio.buddylink.service.*;
 import com.ziio.buddylink.mapper.BlogMapper;
+import com.ziio.buddylink.service.blogInteractionStrategy.BlogInteractionContext;
+import com.ziio.buddylink.service.blogInteractionStrategy.BlogInteractionStrategy;
+import com.ziio.buddylink.service.blogInteractionStrategy.impl.BlogLikedStrategy;
+import com.ziio.buddylink.service.blogInteractionStrategy.impl.BlogStarredStrategy;
+import com.ziio.buddylink.service.blogInteractionStrategy.impl.BlogViewedStrategy;
 import com.ziio.buddylink.utils.JsonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
@@ -29,8 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -477,7 +483,164 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog>
         return (count1 != null && count1 >= 1) && (count2 != null && count2 >= 1);
     }
 
+    @Override
+    public List<BlogVO> listUserBlogs(Long id, BlogQueryRequest blogQueryRequest, HttpServletRequest request) {
+        // 提取效验参数
+        User loginUser = userService.getLoginUser(request);
+        long loginUserId = loginUser.getId();
+        String title = blogQueryRequest.getTitle();
+        int pageSize = blogQueryRequest.getPageSize();
+        int pageNum = blogQueryRequest.getPageNum();
+        if (!redisBloomFilter.userIsContained(id)) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, "用户不存在");
+        }
+        // todo : userId 统一用于查询对象如何？ queryWrapper 不生效问题
+        // blog 分页查询 ， myself
+        QueryWrapper<Blog> queryWrapper = null;
+        if (loginUserId == id) {
+            queryWrapper = new QueryWrapper<>();
+            queryWrapper.like(StringUtils.isNotBlank(title), "title", title);
+            queryWrapper.eq("userId", loginUserId);
+            List<Blog> blogList = this.page(new Page<>(pageNum, pageSize), queryWrapper).getRecords();
+            User user = userService.getById(loginUserId);
+            // 补充 UserVo
+            return blogList.stream().map(blog -> {
+                BlogVO blogVO = new BlogVO();
+                BeanUtils.copyProperties(blog, blogVO);
+                BlogUserVO blogUserVO = new BlogUserVO();
+                BeanUtils.copyProperties(user, blogUserVO);
+                blogVO.setBlogUserVO(blogUserVO);
+                return blogVO;
+            }).collect(Collectors.toList());
+        }
+        // blog 分页查询 ， other
+        queryWrapper = new QueryWrapper<>();
+        queryWrapper.like(StringUtils.isNotBlank(title), "title", title);
+        queryWrapper.eq("userId", id);
+        List<Blog> blogList = this.page(new Page<>(pageNum, pageSize), queryWrapper).getRecords();
+        User user = userService.getById(id);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, "用户存在");
+        }
+        return blogList.stream().map(blog -> {
+            BlogVO blogVO = new BlogVO();
+            BeanUtils.copyProperties(blog, blogVO);
+            BlogUserVO blogUserVO = new BlogUserVO();
+            BeanUtils.copyProperties(user, blogUserVO);
+            blogVO.setBlogUserVO(blogUserVO);
+            return blogVO;
+        }).collect(Collectors.toList());
+    }
 
+    @Override
+    public List<BlogVO> listInteractionBlogs(BlogQueryRequest blogQueryRequest, HttpServletRequest request) {
+        // 提取效验参数
+        String title = blogQueryRequest.getTitle();
+        Long userId = blogQueryRequest.getUserId();
+        Integer type = blogQueryRequest.getType();
+        int pageSize = blogQueryRequest.getPageSize();
+        int pageNum = blogQueryRequest.getPageNum();
+        User loginUser = userService.getLoginUser(request);
+        long loginUserId = loginUser.getId();
+        if (type == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        Set<String> blogStringIds = null;
+        // 查询谁的博客的 map
+        Map<Integer, Long> blogInteractionUserMap = new LinkedHashMap<>();
+        blogInteractionUserMap.put(0, loginUserId);
+        blogInteractionUserMap.put(1, userId);
+        // 查询博客类型的 map
+        Map<Integer, BlogInteractionStrategy> blogInteractionTypeMap = new LinkedHashMap<>();
+        blogInteractionTypeMap.put(0, new BlogStarredStrategy());
+        blogInteractionTypeMap.put(1, new BlogLikedStrategy());
+        blogInteractionTypeMap.put(2, new BlogViewedStrategy());
+        // 选取 策略类型 %3
+        BlogInteractionContext blogInteractionContext = new BlogInteractionContext(blogInteractionTypeMap.get(this.getSelectBlogType(type)));
+        //  选取 user类型 /3 , 查询博客 ids
+        blogStringIds = blogInteractionContext.blogInteractionMethod(blogQueryRequest, stringRedisTemplate,
+                blogInteractionUserMap.get(this.getSelectUserType(type)));
+        // 如果没有任何收藏或者点赞的博客 id，就直接返回空的 List
+        if (CollectionUtils.isEmpty(blogStringIds)) {
+            return new ArrayList<>();
+        }
+        // 查询 blogs , todo: 没模糊查询 title ， 查全部
+        List<Long> blogIds = blogStringIds.stream().map(Long::valueOf).collect(Collectors.toList());
+        List<Blog> blogList = this.listByIds(blogIds);
+        // 封装为 blogVOs
+        return blogList.stream().map(blog -> {
+            BlogVO blogVO = new BlogVO();
+            BeanUtils.copyProperties(blog, blogVO);
+            BlogUserVO blogUserVO = new BlogUserVO();
+            User user = userService.getById(blog.getUserId());
+            BeanUtils.copyProperties(user, blogUserVO);
+            blogVO.setBlogUserVO(blogUserVO);
+            return blogVO;
+        }).collect(Collectors.toList());
+    }
+
+    @Override
+    public UserBlogVO listUserInteractionBlogs(BlogQueryRequest blogQueryRequest, HttpServletRequest request) {
+        // 提取效验参数
+        User loginUser = userService.getLoginUser(request);
+        long loginUserId = loginUser.getId();
+        Long userId = blogQueryRequest.getUserId();
+        if (userId == null || userId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        User user = userService.getById(userId);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, "用户不存在");
+        }
+        UserBlogVO userBlogVO = new UserBlogVO();
+        // 封装 blogUserVO
+        BlogUserVO blogUserVO = new BlogUserVO();
+        BeanUtils.copyProperties(user, blogUserVO);
+        blogUserVO.setFollowed(followService.isFollowed(userId, loginUserId));
+        // 查找 blogVOList
+        List<BlogVO> blogVOList = null;
+        if (blogQueryRequest.getType() == -1) {
+            // 查 userId 创建的
+            blogVOList = listUserBlogs(userId, blogQueryRequest, request);
+        } else {
+            // 查 点赞，收藏，浏览过的
+            blogVOList = listInteractionBlogs(blogQueryRequest, request);
+        }
+        userBlogVO.setBlogVOList(blogVOList);
+        userBlogVO.setBlogUserVO(blogUserVO);
+        return userBlogVO;
+    }
+
+    @Override
+    public long editBlog(BlogEditRequest blogEditRequest, HttpServletRequest request) {
+        List<String> tags = blogEditRequest.getTags();
+        List<String> images = blogEditRequest.getImages();
+        Blog blog = new Blog();
+        BeanUtils.copyProperties(blogEditRequest, blog);
+        // 对 tags ， images 进行 list -> json string 转换
+        if(!CollectionUtils.isEmpty(tags)) {
+            String tagsStr = JsonUtils.ListToJson(tags);
+            blog.setTags(tagsStr);
+        }
+        if(!CollectionUtils.isEmpty(images)) {
+            String imagesStr = JsonUtils.ListToJson(images);
+            blog.setImages(imagesStr);
+        }
+        // 保存 blog
+        boolean b = this.updateById(blog);
+        if (!b) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR);
+        }
+        return blog.getId();
+    }
+
+    private int getSelectUserType(int type) {
+        return type / 3;
+    }
+
+    private int getSelectBlogType(int type) {
+        return type % 3;
+    }
 }
 
 

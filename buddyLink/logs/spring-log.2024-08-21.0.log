@@ -1,0 +1,73 @@
+08:56:00.888 [restartedMain] INFO  c.z.buddylink.BuddyLinkApplication - Starting BuddyLinkApplication using Java 1.8.0_412 on LAPTOP-V97QKHEP with PID 9644 (D:\StarProject\BuddyLink\buddyLink\target\classes started by Ziio in D:\StarProject\BuddyLink\buddyLink)
+08:56:00.890 [restartedMain] INFO  c.z.buddylink.BuddyLinkApplication - The following 1 profile is active: "dev"
+08:56:00.928 [restartedMain] INFO  o.s.b.d.e.DevToolsPropertyDefaultsPostProcessor - Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+08:56:00.928 [restartedMain] INFO  o.s.b.d.e.DevToolsPropertyDefaultsPostProcessor - For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+08:56:01.573 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+08:56:01.575 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+08:56:01.594 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 10 ms. Found 0 Redis repository interfaces.
+08:56:02.047 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port(s): 8080 (http)
+08:56:02.048 [restartedMain] INFO  o.a.c.core.AprLifecycleListener - Loaded Apache Tomcat Native library [1.2.39] using APR version [1.7.4].
+08:56:02.048 [restartedMain] INFO  o.a.c.core.AprLifecycleListener - APR capabilities: IPv6 [true], sendfile [true], accept filters [false], random [true], UDS [true].
+08:56:02.048 [restartedMain] INFO  o.a.c.core.AprLifecycleListener - APR/OpenSSL configuration: useAprConnector [false], useOpenSSL [true]
+08:56:02.051 [restartedMain] INFO  o.a.c.core.AprLifecycleListener - OpenSSL successfully initialized [OpenSSL 3.0.11 19 Sep 2023]
+08:56:02.058 [restartedMain] INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+08:56:02.058 [restartedMain] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+08:56:02.058 [restartedMain] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/9.0.68]
+08:56:02.131 [restartedMain] INFO  o.a.c.c.C.[.[localhost].[/api] - Initializing Spring embedded WebApplicationContext
+08:56:02.131 [restartedMain] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 1202 ms
+08:56:02.847 [restartedMain] INFO  o.s.b.web.servlet.RegistrationBean - Filter httpSessionFilter was not registered (possibly already registered?)
+08:56:02.934 [restartedMain] INFO  org.redisson.Version - Redisson 3.17.5
+08:56:03.289 [redisson-netty-4-8] INFO  o.r.c.p.MasterPubSubConnectionPool - 1 connections initialized for localhost/127.0.0.1:6379
+08:56:03.307 [redisson-netty-4-20] INFO  o.r.c.pool.MasterConnectionPool - 24 connections initialized for localhost/127.0.0.1:6379
+08:56:04.499 [restartedMain] INFO  s.d.s.w.WebMvcPropertySourcedRequestMappingHandlerMapping - Mapped URL path [/v2/api-docs] onto method [springfox.documentation.swagger2.web.Swagger2ControllerWebMvc#getDocumentation(String, HttpServletRequest)]
+08:56:04.586 [restartedMain] INFO  o.s.b.d.a.OptionalLiveReloadServer - LiveReload server is running on port 35729
+08:56:04.603 [restartedMain] INFO  o.s.b.a.w.s.WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+08:56:04.908 [restartedMain] INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+08:56:04.916 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port(s): 8080 (http) with context path '/api'
+08:56:04.916 [restartedMain] INFO  s.d.s.w.p.DocumentationPluginsBootstrapper - Documentation plugins bootstrapped
+08:56:04.918 [restartedMain] INFO  s.d.s.w.p.DocumentationPluginsBootstrapper - Found 1 custom documentation plugin(s)
+08:56:04.941 [restartedMain] INFO  s.d.s.w.s.ApiListingReferenceScanner - Scanning for api listing references
+08:56:05.836 [restartedMain] INFO  o.s.s.a.ScheduledAnnotationBeanPostProcessor - No TaskScheduler/ScheduledExecutorService bean found for scheduled processing
+08:56:05.842 [restartedMain] INFO  c.z.buddylink.BuddyLinkApplication - Started BuddyLinkApplication in 5.274 seconds (JVM running for 6.331)
+08:56:56.812 [http-nio-8080-exec-1] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:56:56.817 [http-nio-8080-exec-1] INFO  o.a.c.c.C.[.[localhost].[/api] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+08:56:56.817 [http-nio-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+08:56:56.819 [http-nio-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 2 ms
+08:56:56.928 [http-nio-8080-exec-4] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:56:56.928 [http-nio-8080-exec-2] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:56:56.928 [http-nio-8080-exec-3] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:56:56.929 [http-nio-8080-exec-5] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:56:57.079 [http-nio-8080-exec-7] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:56:57.079 [http-nio-8080-exec-8] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:56:57.079 [http-nio-8080-exec-6] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:56:57.079 [http-nio-8080-exec-9] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:56:57.080 [http-nio-8080-exec-10] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:56:57.093 [http-nio-8080-exec-1] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:56:57.094 [http-nio-8080-exec-3] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:56:57.095 [http-nio-8080-exec-4] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:56:57.095 [http-nio-8080-exec-2] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:56:57.095 [http-nio-8080-exec-5] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:56:57.104 [http-nio-8080-exec-6] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:56:57.111 [http-nio-8080-exec-9] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:56:57.112 [http-nio-8080-exec-10] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:56:57.113 [http-nio-8080-exec-7] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:56:57.568 [http-nio-8080-exec-8] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:56:57.570 [http-nio-8080-exec-3] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:56:57.626 [http-nio-8080-exec-1] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:57:08.532 [http-nio-8080-exec-4] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:57:08.532 [http-nio-8080-exec-2] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:57:08.532 [http-nio-8080-exec-5] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:57:08.532 [http-nio-8080-exec-6] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:57:08.578 [http-nio-8080-exec-9] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:57:08.578 [http-nio-8080-exec-7] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:57:08.578 [http-nio-8080-exec-10] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:57:08.593 [http-nio-8080-exec-8] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:57:09.637 [http-nio-8080-exec-1] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:57:09.637 [http-nio-8080-exec-4] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:57:09.637 [http-nio-8080-exec-3] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:57:09.680 [http-nio-8080-exec-5] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:57:10.472 [http-nio-8080-exec-2] INFO  c.z.b.config.HttpSessionConfig - HttpSession initialized: EF9BB52F590363FD45F062847AB40FEB
+08:57:10.559 [http-nio-8080-exec-2] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+08:57:10.675 [http-nio-8080-exec-2] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+08:57:22.013 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
+08:57:22.020 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.

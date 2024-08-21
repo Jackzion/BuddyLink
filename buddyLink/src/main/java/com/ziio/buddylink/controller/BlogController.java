@@ -6,6 +6,7 @@ import com.ziio.buddylink.common.ResultUtils;
 import com.ziio.buddylink.exception.BusinessException;
 import com.ziio.buddylink.model.request.*;
 import com.ziio.buddylink.model.vo.BlogVO;
+import com.ziio.buddylink.model.vo.UserBlogVO;
 import com.ziio.buddylink.service.BlogService;
 import org.springframework.web.bind.annotation.*;
 
@@ -92,5 +93,44 @@ public class BlogController {
         }
         boolean b = blogService.cancelLikeBlog(likeRequest, request);
         return ResultUtils.success(b);
+    }
+
+    @PostMapping("/user/{id}")
+    public BaseResponse<List<BlogVO>> listUserBlogs(@PathVariable("id") Long id,
+                                                    @RequestBody BlogQueryRequest blogQueryRequest, HttpServletRequest request) {
+        if (id == null || id <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户不存在");
+        }
+        List<BlogVO> blogVOList = blogService.listUserBlogs(id, blogQueryRequest, request);
+        return ResultUtils.success(blogVOList);
+    }
+
+    @PostMapping("/interaction/list")
+    public BaseResponse<List<BlogVO>> listLikedOrStarredBlogs(@RequestBody BlogQueryRequest blogQueryRequest,
+                                                              HttpServletRequest request) {
+        if (blogQueryRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        List<BlogVO> blogVOList = blogService.listInteractionBlogs(blogQueryRequest, request);
+        return ResultUtils.success(blogVOList);
+    }
+
+    @PostMapping("/user/list")
+    public BaseResponse<UserBlogVO> listUserInteractionBlogs(@RequestBody BlogQueryRequest blogQueryRequest,
+                                                             HttpServletRequest request) {
+        if (blogQueryRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        UserBlogVO blogVOList = blogService.listUserInteractionBlogs(blogQueryRequest, request);
+        return ResultUtils.success(blogVOList);
+    }
+
+    @PostMapping("/edit")
+    public BaseResponse<Long> editBlog(@RequestBody BlogEditRequest blogEditRequest, HttpServletRequest request) {
+        if (blogEditRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        long id = blogService.editBlog(blogEditRequest, request);
+        return ResultUtils.success(id);
     }
 }
