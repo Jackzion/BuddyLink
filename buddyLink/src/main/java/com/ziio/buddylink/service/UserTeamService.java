@@ -10,4 +10,11 @@ import com.baomidou.mybatisplus.extension.service.IService;
 */
 public interface UserTeamService extends IService<UserTeam> {
 
+    /**
+     * 判断用户是否在队伍中
+     * @param teamId
+     * @param id
+     * @return
+     */
+    boolean teamHasUser(Long teamId, Long id);
 }

@@ -1,5 +1,6 @@
 package com.ziio.buddylink.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ziio.buddylink.model.domain.UserTeam;
 import com.ziio.buddylink.service.UserTeamService;
@@ -15,6 +16,10 @@ import org.springframework.stereotype.Service;
 public class UserTeamServiceImpl extends ServiceImpl<UserTeamMapper, UserTeam>
     implements UserTeamService{
 
+    @Override
+    public boolean teamHasUser(Long teamId, Long id) {
+        return this.lambdaQuery().eq(UserTeam::getTeamId, teamId).eq(UserTeam::getUserId, id).count() > 0;
+    }
 }
 
 

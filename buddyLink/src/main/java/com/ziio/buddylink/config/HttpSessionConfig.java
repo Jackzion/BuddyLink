@@ -25,6 +25,7 @@ public class HttpSessionConfig extends ServerEndpointConfig.Configurator impleme
     public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response) {
         HttpSession httpSession = (HttpSession) request.getHttpSession();
         if (httpSession != null) {
+            // 将 session 存到 endpointConfig ， 便于代码获取
             sec.getUserProperties().put(HttpSession.class.getName(), httpSession);
             log.info("修改握手中设置的HttpSession: {}", httpSession.getId());
         } else {
