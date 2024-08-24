@@ -1,5 +1,4 @@
 import { createApp } from 'vue'
-import './style.css'
 import App from './App.vue'
 // 1. 引入你需要的组件
 import {
@@ -14,6 +13,7 @@ import store from "./config/store.ts";
 import UserLoginPage from "./pages/User/UserLoginPage.vue";
 import UserRegisterPage from "./pages/User/UserRegisterPage.vue";
 import RegisterTagsPage from "./pages/User/RegisterTagsPage.vue";
+import RegisterImagePage from "./pages/User/RegisterImagePage.vue";
 
 
 const router = VueRouter.createRouter({
@@ -50,6 +50,7 @@ app.component("default-layout", BasicLayout);
 app.component("login-layout", UserLoginPage);
 app.component("register-layout", UserRegisterPage);
 app.component("register-tags-layout", RegisterTagsPage);
+app.component("register-image-layout", RegisterImagePage);
 
 app.use(router);
 app.mount('#app')

@@ -1,25 +1,26 @@
 <template>
   <!-- 页面标题 + 左右按钮  -->
-  <van-nav-bar
-     :title="title"
-      left-text="返回"
-      left-arrow
-      @click-left="onClickLeft"
-      @click-right="onClickRight"
+  <van-sticky>
+    <van-nav-bar
+        :title="title"
+        left-text="返回"
+        left-arrow
+        @click-left="onClickLeft"
+        @click-right="onClickRight"
     >
-    <template #right>
-      <van-icon name="search" size="18" />
-    </template>
-  </van-nav-bar>
-<!--  通知栏-->
-  <van-notice-bar
-      left-icon="volume-o"
-      text="无论我们能活多久，我们能够享受的只有无法分割的此刻，此外别无其他。"
-  />
-  <!--  内容区 -->
-  <div id="cotent" style="padding-bottom: 50px">
-    <router-view/>
-  </div>
+      <template #right>
+        <van-icon name="search" size="18" />
+      </template>
+    </van-nav-bar>
+    <!--  通知栏-->
+    <van-notice-bar
+        left-icon="volume-o"
+        text="无论我们能活多久，我们能够享受的只有无法分割的此刻，此外别无其他。"
+    />
+  </van-sticky>
+
+  <!--  内容区 -- 插槽 -->
+  <slot></slot>
   <!--  底部导航栏 -->
   <van-tabbar route @change="onChange">
     <van-tabbar-item to="/" icon="home-o" name="index">主页</van-tabbar-item>

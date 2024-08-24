@@ -92,6 +92,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         String username = userRegisterRequest.getUsername();
         Double longitude = userRegisterRequest.getLongitude();
         Double dimension = userRegisterRequest.getDimension();
+        String userAvatar = userRegisterRequest.getAvatarUrl();
         String ip = request.getRemoteHost();
 
         //1.校验
@@ -133,6 +134,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         user.setLongitude(longitude);
         user.setDimension(dimension);
         user.setUsername(username);
+        if(userAvatar!=null){
+            user.setAvatarUrl(userAvatar);
+        }
         //4.处理用户标签(list 轉 json)
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append('[');

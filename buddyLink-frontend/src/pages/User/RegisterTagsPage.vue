@@ -23,9 +23,9 @@
 <!--    已选标签 -->
     <van-divider content-position="left">已选标签</van-divider>
     <div v-if="activeIds.length === 0">请选择您的标签</div>
-    <van-row :gutter="[8, 8]" style="padding: 0 16px">
-      <van-col>
-        <van-tag v-for="tag in activeIds"  closeable size="medium" type="primary" @close="doClose(tag)">
+    <van-row :gutter="[10, 8]" style="padding: 0 16px;">
+      <van-col v-for="tag in activeIds" >
+        <van-tag closeable size="medium" type="primary" style=" margin: 3px" @close="doClose(tag)">
           {{tag}}
         </van-tag>
       </van-col>
@@ -147,26 +147,22 @@ const onCancel = () => {
 const { registerUser } = route.query;
 
 // 注册
-const doSearchResult = async () =>{
+const doSearchResult = () =>{
+
   if(activeIds.value.length >0){
+    // add new data -- tagNameList
     const registerUserParam = JSON.parse(registerUser);
-    // 发送注册请求
-    const res = await myAxios.post('/user/register', {
-      userAccount: registerUserParam.userAccount,
-      userPassword: registerUserParam.userPassword,
-      checkPassword: registerUserParam.checkPassword,
-      username: registerUserParam.username,
-      tagNameList: activeIds.value,
-      longitude: registerUserParam.longitude,
-      dimension: registerUserParam.dimension,
-        }
-    );
-    if(res?.code===0){
-      showSuccessToast("注册成功");
-      router.push('/user/login'); // 跳转到登录页面
-    }else{
-      showToast('注册失败' + (`${res.description}` ? `，${res.description}` : ''));
-    }
+    const newRegisterUserParam = {
+      ...registerUserParam,
+      tagNameList: activeIds.value
+    };
+    // 路由到 Avatar select page
+    router.push({
+      path: '/user/registerImage',
+      query: {
+        registerUser: JSON.stringify(newRegisterUserParam),
+      }
+    });
   }else{
     showToast("请至少选择一个标签");
   }

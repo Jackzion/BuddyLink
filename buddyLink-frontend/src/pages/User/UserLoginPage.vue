@@ -12,9 +12,9 @@
 <!--      图标  todo:更换图标 -->
       <van-image
           round
-          width="10rem"
-          height="8rem"
-          src="https://article-images.zsxq.com/Fnj10F-xlXGAHOGBru1dT6tmJsLr"
+          width="12rem"
+          height="12rem"
+          src="/src/assets/LoginLogo.jpg"
       />
     </div>
 <!--    标题-->
