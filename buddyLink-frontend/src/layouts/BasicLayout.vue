@@ -55,6 +55,7 @@ import {ref} from "vue";
       // matchedRoute 为空，取 DEFAULT_TITLE 作为标题
       title.value = DEFAULT_TITLE;
     }
+    next();
   });
 
 const onClickLeft = () => {
@@ -70,6 +71,6 @@ const onChange = () => {
 
 </script>
 
-<style lang="scss" scoped>
+<style scoped>
 
 </style>

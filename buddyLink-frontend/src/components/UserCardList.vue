@@ -26,7 +26,7 @@
 
   const router = useRouter();
 
-  // 提取 props
+  // 定义接口 , 提取 props
   interface UserCardListProps{
     loading: boolean
     userList: UserType[];

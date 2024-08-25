@@ -115,6 +115,7 @@ public class BlogController {
         return ResultUtils.success(blogVOList);
     }
 
+    // 查询用户 收藏 ，喜欢，编写 ，浏览的 blogs , 并附带详细信息
     @PostMapping("/user/list")
     public BaseResponse<UserBlogVO> listUserInteractionBlogs(@RequestBody BlogQueryRequest blogQueryRequest,
                                                              HttpServletRequest request) {

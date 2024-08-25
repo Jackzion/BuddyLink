@@ -9,6 +9,7 @@
     </van-cell>
     <!--  用户列表-->
     <user-card-list :user-list="userList" :loading="loading"/>
+    <!--  回到顶部-->
     <van-back-top right="15vw" bottom="10vh" />
     <!--  滚动组件触发-->
     <div style="display: flex; justify-content: center;">
@@ -21,15 +22,12 @@
 
 <script setup lang="ts">
 import {ref, watchEffect} from "vue";
-import {useRoute} from "vue-router";
 import {showToast} from "vant";
 import InfiniteLoading from "v3-infinite-loading";
 import {UserType} from "../models/user";
 import myAxios from "../config/myAxios.ts";
 import BasicLayout from "../layouts/BasicLayout.vue";
 
-const route = useRoute();
-const {tags} = route.query;
 const searchText = ref('');
 const userList = ref<UserType[]>([]);
 const isMatchMode = ref<boolean>(false); // ISMATCHMODE 随着组件自动变化

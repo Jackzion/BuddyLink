@@ -1,10 +1,10 @@
 import axios from "axios";
 
 // todo : 可更改为上线地址
-export const URL = 'http://localhost:8080/api'
+export const URL = 'localhost:8080/api'
 
 const myAxios =  axios.create({
-    baseURL: URL,
+    baseURL: 'http://localhost:8080/api',
 })
 
 myAxios.defaults.withCredentials = true; //设置为true

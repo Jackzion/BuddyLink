@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import BasicLayout from "./layouts/BasicLayout.vue";
 </script>
 
 <template>
   <div id="app">
 <!--    属性 binding layout ， 根据 layout 选出 component-->
 <!--    <component :is = "layout">-->
-      <router-view />
+<!--    todo: route fail-->
+    <router-view/>
   </div>
 </template>
 

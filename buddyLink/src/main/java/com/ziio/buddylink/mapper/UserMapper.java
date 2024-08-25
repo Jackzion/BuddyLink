@@ -18,7 +18,7 @@ public interface UserMapper extends BaseMapper<User> {
 
     long hasFollowerCount(long userId);
 
-    @Select("select * from user where score >= 0 order by score desc")
+    @Select("select * from user where score >= 0 order by score desc limit 10")
     List<User> selectUserTop10Score();
 }
 
