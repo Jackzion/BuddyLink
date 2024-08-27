@@ -1,5 +1,7 @@
 package com.ziio.buddylink.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ziio.buddylink.common.ErrorCode;
@@ -13,12 +15,14 @@ import com.ziio.buddylink.model.vo.FollowVO;
 import com.ziio.buddylink.service.FollowService;
 import com.ziio.buddylink.service.MessageService;
 import com.ziio.buddylink.service.UserService;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
 * @author Ziio
@@ -52,7 +56,19 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper, Follow>
         // 提取参数
         User loginUser = userService.getLoginUser(request);
         long loginUserId = loginUser.getId();
-        return null;
+        long userId = followQueryRequest.getUserId();
+        int type = followQueryRequest.getType();
+        // todo: 效验参数 type
+
+        // 根据 followerId 查看关注列表
+        List<Follow> list = lambdaQuery().eq(Follow::getFollowerId, userId).list();
+        return list.stream().map(follow -> {
+            User followee = userService.getById(follow.getUserId());
+            FollowVO followVO = new FollowVO();
+            BeanUtils.copyProperties(followee, followVO);
+            followVO.setIsFollowed(true);
+            return followVO;
+        }).collect(Collectors.toList());
     }
 
     @Override

@@ -1,5 +1,4 @@
 <template>
-  <basic-layout>
     <div style="margin-left: 32px; margin-top: 30px">
       <span style="color: #C8C9CC; font-size: 15px">给网站评个分吧！</span>
       <van-rate v-model="score" color="#ffd21e" void-icon="star" allow-half @click="doRate"/>
@@ -19,7 +18,6 @@
       </van-cell-group>
       <van-button type="success" style="position:absolute; right: 0; transform: translateY(-50%);  margin-top: 20px; margin-right: 12px;" @click="addFeedback">提交</van-button>
     </div>
-  </basic-layout>
 </template>
 
 <script setup lang="ts">

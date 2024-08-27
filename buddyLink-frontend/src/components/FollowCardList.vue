@@ -55,7 +55,7 @@ const addFollow = async (followeeId: number, isFollowed: boolean) => {
 };
 
 // 取消关注
-const deleteFollow = (followeeId: number, isFollowed: boolean) => {
+const deleteFollow = async (followeeId: number, isFollowed: boolean) => {
   // 构建请求参数
   const followAddRequest = {
     followeeId: followeeId,

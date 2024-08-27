@@ -177,6 +177,7 @@ onMounted(async () => {
   lastElement.scrollIntoView()
 })
 
+// 初始化 webSocket
 const init = () => {
   let uid = stats.value.user?.id;
   if (typeof (WebSocket) == "undefined") {

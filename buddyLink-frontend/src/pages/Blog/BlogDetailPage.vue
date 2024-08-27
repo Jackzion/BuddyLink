@@ -67,6 +67,7 @@ import {getCurrentUser} from "../../services/user";
 import myAxios from "../../config/myAxios.ts";
 import BlogUserIntro from "../../components/BlogUserIntro.vue";
 import CommentCardList from "../../components/CommentCardList.vue";
+import MdViewer from "./MdViewer.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -177,7 +178,7 @@ const cancelStarBlog = async (id, isStarred) => {
     blog.value.starNum = blog.value.starNum - 1;
     blog.value.starred = false;
   } else {
-    showToast('收藏失败' + (res.description ? `，${res.description}` : ''));
+    showToast('取消收藏失败' + (res.description ? `，${res.description}` : ''));
   }
 };
 

@@ -21,7 +21,9 @@ import RankPage from "../pages/Other/RankPage.vue";
 import SignInPage from "../pages/Other/SignInPage.vue";
 import FeedbackPage from "../pages/Other/FeedbackPage.vue";
 import ActivityPage from "../pages/Other/ActivityPage.vue";
-
+import FollowPage from "../pages/Follow/FollowPage.vue";
+import BlogRecommendPage from "../pages/Blog/BlogRecommendPage.vue";
+import BlogCreatePage from "../pages/Blog/BlogCreatePage.vue";
 
 
 const routes = [
@@ -48,6 +50,9 @@ const routes = [
     {path: '/user/sign/in', title: '签到', component: SignInPage},
     {path: '/buddy/feedback', title: '反馈', component: FeedbackPage},
     {path: '/buddy/activity', title: '创作活动', component: ActivityPage},
+    {path: '/user/follow', title: '关注', component: FollowPage},
+    {path: '/blog', title: '博客', component: BlogRecommendPage},
+    {path: '/blog/create', title: '发布博客', component: BlogCreatePage},
 
 ];
 

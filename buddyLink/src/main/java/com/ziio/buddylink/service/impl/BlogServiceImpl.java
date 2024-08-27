@@ -76,7 +76,6 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog>
         User loginUser = userService.getLoginUser(request);
         long userId = loginUser.getId();
         String title = blogAddRequest.getTitle();
-        String coverImage = blogAddRequest.getCoverImage();
         List<String> images = blogAddRequest.getImages();
         String content = blogAddRequest.getContent();
         List<String> tags = blogAddRequest.getTags();
@@ -88,9 +87,10 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog>
         if (title.length() < 1 || title.length() > 100) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "标题过长");
         }
-        if (StringUtils.isBlank(coverImage) || coverImage.length() > 256) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "封面图片未上传或图片链接太长");
-        }
+//        todo:图片上传默认值
+//        if (StringUtils.isBlank(coverImage) || coverImage.length() > 256) {
+//            throw new BusinessException(ErrorCode.PARAMS_ERROR, "封面图片未上传或图片链接太长");
+//        }
         if (images.size() > 50) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "图片过多");
         }
@@ -103,7 +103,6 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog>
         // 2. 保存到数据库
         Blog blog = new Blog();
         blog.setTitle(title);
-        blog.setCoverImage(coverImage);
         blog.setContent(content);
         blog.setUserId(userId);
         // 处理 tags ,..( list to jsonStr)
@@ -424,7 +423,7 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog>
             throw new BusinessException(ErrorCode.NULL_ERROR, "博客不存在");
         }
         // 判断用户是否已经收藏
-        if (starred || isStarred(blogId, userId)) {
+        if (!starred || !isStarred(blogId, userId)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "您未收藏");
         }
         // 删除用户收藏记录

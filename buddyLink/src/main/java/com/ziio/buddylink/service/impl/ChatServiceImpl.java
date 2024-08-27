@@ -186,7 +186,7 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat>
         if(chatRecords != null){
             // 每次获取 ，添加 isMyMessage 标识 ，因为是公共聊天记录 -team ， hall 。。。, 每次获取 ， isMine会改变
             List<ChatMessageVO> chatMessageVOS = checkIsMyMessage(loginUser, chatRecords);
-            // todo:多存一遍？
+            // 多存一遍？保证 isMy 实时性
             saveCache(CACHE_CHAT_TEAM, String.valueOf(teamId), chatMessageVOS);
             return chatMessageVOS;
         }

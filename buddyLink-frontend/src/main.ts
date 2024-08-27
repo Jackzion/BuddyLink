@@ -14,6 +14,7 @@ import UserLoginPage from "./pages/User/UserLoginPage.vue";
 import UserRegisterPage from "./pages/User/UserRegisterPage.vue";
 import RegisterTagsPage from "./pages/User/RegisterTagsPage.vue";
 import RegisterImagePage from "./pages/User/RegisterImagePage.vue";
+import 'bytemd/dist/index.css'
 
 
 const router = VueRouter.createRouter({
