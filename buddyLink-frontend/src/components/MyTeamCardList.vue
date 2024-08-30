@@ -37,6 +37,7 @@ import {showFailToast, showSuccessToast} from "vant";
 import {useRouter} from "vue-router";
 import {TeamType} from "../models/team";
 import {teamStatusEnum} from "../enums/TeamType.ts";
+import myAxios from "../config/myAxios.ts";
 
 interface TeamCardListProps {
   teamList: TeamType[]
@@ -62,6 +63,7 @@ const preJoinTeam = (team: TeamType) => {
   if (team.status === 0){
     doJoinTeam();
   } else {
+    // 弹出密码框
     showPasswordDialog.value = true;
   }
 }

@@ -1,60 +1,62 @@
 <template>
-  <van-form @submit="onSubmit">
-    <van-cell-group inset>
-      <van-field
-          v-model="updateTeamData.teamName"
-          name="teamName"
-          label="队伍名称"
-          placeholder="请输入队伍名称"
-          :rules="[{ required: true, message: '请输入队伍名称' }]"
-      />
-      <van-field
-          v-model="updateTeamData.description"
-          rows="4"
-          autosize
-          label="队伍描述"
-          type="textarea"
-          placeholder="请输入队伍描述"
-      />
+  <basic-layout>
+    <van-form @submit="onSubmit">
+      <van-cell-group inset>
+        <van-field
+            v-model="updateTeamData.teamName"
+            name="teamName"
+            label="队伍名称"
+            placeholder="请输入队伍名称"
+            :rules="[{ required: true, message: '请输入队伍名称' }]"
+        />
+        <van-field
+            v-model="updateTeamData.description"
+            rows="4"
+            autosize
+            label="队伍描述"
+            type="textarea"
+            placeholder="请输入队伍描述"
+        />
 
-      <van-field
-          v-model="updateTeamData.expireTime"
-          is-link
-          readonly
-          name="datePicker"
-          label="过期时间"
-          placeholder="点击选择过期时间"
-          @click="showPicker = true"
-      />
-      <van-popup v-model:show="showPicker" position="bottom">
-        <van-date-picker @confirm="onConfirm" @cancel="showPicker = false" />
-      </van-popup>
+        <van-field
+            v-model="updateTeamData.expireTime"
+            is-link
+            readonly
+            name="datePicker"
+            label="过期时间"
+            placeholder="点击选择过期时间"
+            @click="showPicker = true"
+        />
+        <van-popup v-model:show="showPicker" position="bottom">
+          <van-date-picker @confirm="onConfirm" @cancel="showPicker = false" />
+        </van-popup>
 
-      <van-field name="radio" label="单选框">
-        <template #input>
-          <van-radio-group v-model="updateTeamData.status" direction="horizontal">
-            <van-radio name="0">公开</van-radio>
-            <van-radio name="1">私有</van-radio>
-            <van-radio name="2">加密</van-radio>
-          </van-radio-group>
-        </template>
-      </van-field>
-      <van-field
-          v-if="Number(updateTeamData.status) === 2"
-          v-model="updateTeamData.password"
-          type="password"
-          name="password"
-          label="队伍密码"
-          placeholder="请输入队伍密码"
-          :rules="[{ required: true, message: '请填写队伍密码' }]"
-      />
-    </van-cell-group>
-    <div style="margin: 16px;">
-      <van-button round block type="primary" native-type="submit">
-        提交
-      </van-button>
-    </div>
-  </van-form>
+        <van-field name="radio" label="单选框">
+          <template #input>
+            <van-radio-group v-model="updateTeamData.status" direction="horizontal">
+              <van-radio name="0">公开</van-radio>
+              <van-radio name="1">私有</van-radio>
+              <van-radio name="2">加密</van-radio>
+            </van-radio-group>
+          </template>
+        </van-field>
+        <van-field
+            v-if="Number(updateTeamData.status) === 2"
+            v-model="updateTeamData.password"
+            type="password"
+            name="password"
+            label="队伍密码"
+            placeholder="请输入队伍密码"
+            :rules="[{ required: true, message: '请填写队伍密码' }]"
+        />
+      </van-cell-group>
+      <div style="margin: 16px;">
+        <van-button round block type="primary" native-type="submit">
+          提交
+        </van-button>
+      </div>
+    </van-form>
+  </basic-layout>
 </template>
 
 <script setup>
@@ -63,6 +65,7 @@ import {onMounted, ref} from "vue";
 import myAxios from "../../config/myAxios.ts";
 import {showToast} from "vant";
 import {useStore} from "vuex";
+import BasicLayout from "../../layouts/BasicLayout.vue";
 
 const router = useRouter();
 const route = useRoute();

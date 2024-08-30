@@ -24,6 +24,8 @@ import ActivityPage from "../pages/Other/ActivityPage.vue";
 import FollowPage from "../pages/Follow/FollowPage.vue";
 import BlogRecommendPage from "../pages/Blog/BlogRecommendPage.vue";
 import BlogCreatePage from "../pages/Blog/BlogCreatePage.vue";
+import TeamPage from "../pages/Team/TeamPage.vue";
+import TeamIntroPage from "../pages/Team/TeamIntroPage.vue";
 
 
 const routes = [
@@ -53,6 +55,8 @@ const routes = [
     {path: '/user/follow', title: '关注', component: FollowPage},
     {path: '/blog', title: '博客', component: BlogRecommendPage},
     {path: '/blog/create', title: '发布博客', component: BlogCreatePage},
+    {path: '/team', title: '找队伍', component: TeamPage},
+    {path: '/team/introduce', title: '队伍详情', component: TeamIntroPage},
 
 ];
 

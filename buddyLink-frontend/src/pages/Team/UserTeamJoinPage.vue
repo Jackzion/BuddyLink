@@ -1,10 +1,12 @@
 <template>
-  <div id="teamPage">
-    <van-search v-model="searchText" placeholder="搜索队伍" @search="onSearch"/>
-    <!--    <team-card-list :team-list="teamList"></team-card-list>-->
-    <my-team-card-list :team-list="teamList"/>
-    <van-empty v-show="!teamList || teamList.length < 1" description="您还未加入队伍" />
-  </div>
+  <basic-layout>
+    <div id="teamPage">
+      <van-search v-model="searchText" placeholder="搜索队伍" @search="onSearch"/>
+      <!--    <team-card-list :team-list="teamList"></team-card-list>-->
+      <my-team-card-list :team-list="teamList"/>
+      <van-empty v-show="!teamList || teamList.length < 1" description="您还未加入队伍" />
+    </div>
+  </basic-layout>
 </template>
 
 <script setup>
@@ -13,6 +15,7 @@ import myAxios from "../../config/myAxios.ts";
 import {onMounted, ref} from "vue";
 import {showToast} from "vant";
 import MyTeamCardList from "../../components/MyTeamCardList.vue";
+import BasicLayout from "../../layouts/BasicLayout.vue";
 
 const router = useRouter();
 

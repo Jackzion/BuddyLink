@@ -149,7 +149,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         Long teamId = team.getId();
         // 3.效验你是否为队长
         Long userId = team.getUserId();
-        if (userId != loginUser.getId()) {
+        if (!userId.equals(loginUser.getId()) && !userService.isAdmin(loginUser)) {
             throw new BusinessException(ErrorCode.NO_AUTH);
         }
         // 4. 移除所有 user_team 表的关联信息
