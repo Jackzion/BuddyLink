@@ -65,6 +65,7 @@ public class WebSocket {
 
     /**
      * 会话池
+     * <userId , session>
      */
     private static final Map<String, Session> SESSION_POOL = new HashMap<>();
 
@@ -146,7 +147,7 @@ public class WebSocket {
      */
     public static void broadcast(String teamId,String message) {
         ConcurrentMap<String, WebSocket> teamRoom = Rooms.get(teamId);
-        // keySet 获取所有key ， 遍历 key ， 进行 send Message
+        // keySet 获取所有key ， 遍历 key ，获取每一个 webSocket ， 进行 send Message
         for (String key : teamRoom.keySet()) {
             try{
                 WebSocket webSocket = teamRoom.get(key);
@@ -201,6 +202,7 @@ public class WebSocket {
             if(!"NaN".equals(teamId)){
                 if(!Rooms.containsKey(teamId)){
                     // init team room
+                    // todo : ConcurrentMap<String , WebSocket> change to <string , session>
                     ConcurrentMap<String , WebSocket> room = new ConcurrentHashMap<>(0);
                     room.put(userId,this);
                     Rooms.put(teamId,room);
@@ -209,12 +211,12 @@ public class WebSocket {
                     // add user to team room
                     Rooms.get(teamId).put(userId,this);
                     addOnlineCount();
-                }else{
-                    // 个人连接 ， 将更新用户名单 session ， session poll ， 并将新用户名单 send all user
-                    SESSIONS.add(session);
-                    SESSION_POOL.put(userId, session);
-                    this.sendAllUsers();
                 }
+            }else{
+                // 个人连接 ， 将更新用户名单 session ， session poll ， 并将新用户名单 send all user
+                SESSIONS.add(session);
+                SESSION_POOL.put(userId, session);
+                this.sendAllUsers();
             }
         }catch(Exception e){
             log.error("exception message",e);
@@ -257,6 +259,7 @@ public class WebSocket {
             sendOneMessage(userId, "pong");
             return;
         }
+
         // 对 message(json) 拆封
         MessageRequest messageRequest = new Gson().fromJson(message, MessageRequest.class);
         Long toId = messageRequest.getToId();
@@ -275,6 +278,7 @@ public class WebSocket {
         } else {
             // 群聊
             hallChat(fromUser, text, chatType);
+
         }
     }
 

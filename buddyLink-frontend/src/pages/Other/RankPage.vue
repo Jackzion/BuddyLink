@@ -10,9 +10,10 @@ import {showToast} from "vant";
 import myAxios from "../../config/myAxios.ts";
 const dataList = ref([]);
 
+// 动态折线图 参考 https://echarts.apache.org/examples/zh/editor.html?c=bar-race&lang=ts
 onMounted(async () => {
   // 获取 HTML 元素中 id 为 'rank-echart' 的元素，这个元素将用作 ECharts 图表的容器
-  const chartDom = document.getElementById('rank-echart');O
+  const chartDom = document.getElementById('rank-echart');
 
   // 初始化 ECharts 实例，将图表绑定到上面获取的 DOM 元素中
   const myChart = echarts.init(chartDom);

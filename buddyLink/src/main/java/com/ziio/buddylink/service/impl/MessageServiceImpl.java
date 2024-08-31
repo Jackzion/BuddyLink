@@ -128,7 +128,7 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message>
                 .eq("toId", userId).eq("type", 1).eq("isRead", 0));
         long followMessageNum = this.baseMapper.selectCount(new QueryWrapper<Message>()
                 .eq("toId", userId).eq("type", 2).eq("isRead", 0));
-        return new InteractionMessageVO(starMessageNum,likeMessageNum,followMessageNum);
+        return new InteractionMessageVO(likeMessageNum,starMessageNum,followMessageNum);
     }
 
     @Override

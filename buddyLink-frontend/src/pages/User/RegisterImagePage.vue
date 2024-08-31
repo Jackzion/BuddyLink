@@ -94,7 +94,7 @@ const doSearchResult = async () =>{
       showToast('注册失败' + (`${res.description}` ? `，${res.description}` : ''));
     }
   }else{
-    showToast("请至少选择一个标签");
+    showToast("请至少选择一个头像");
   }
 }
 
@@ -115,7 +115,7 @@ const editUserImage = async () =>{
     }
   }
   else{
-    showToast("请至少选择一个标签");
+    showToast("请至少选择一个头像");
   }
 }
 

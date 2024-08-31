@@ -194,11 +194,13 @@ const init = () => {
     socket = new WebSocket(socketUrl);
     //打开事件
     socket.onopen = function () {
+      console.log("webSocket 已打开!!")
       startHeartbeat();
     };
     // 接收到消息时的处理
     //  浏览器端收消息，获得从服务端发送过来的文本消息
     socket.onmessage = function (msg) {
+      console.log("我已接收到数据!!")
       if (msg.data === "pong") {
         return;
       }
