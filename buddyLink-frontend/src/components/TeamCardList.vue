@@ -15,6 +15,18 @@
       <van-button v-if="team.hasJoin && team.userId !== currentUser?.id" size="normal" type="warning" @click.stop="doQuitTeam(team.id)">退出</van-button>
       <van-button v-if="team.hasJoin && team.userId === currentUser?.id" size="normal" type="warning" @click.stop="doDeleteTeam(team.id)">解散</van-button>
     </template>
+<!--      队伍头像列表-->
+    <template #price>
+      <van-image v-for = "user in maxFourUsers(team)" style="margin: 5px"
+          round
+          width="2rem"
+          height="2rem"
+          :src="user.avatarUrl"
+      />
+      <div v-if="team.hasJoinNum > 4">
+        。。。。
+      </div>
+    </template>
     <template #bottom>
       <div>
         {{ `队伍人数: ${team.hasJoinNum}/${team.maxNum}`}}
@@ -38,7 +50,7 @@
 
   import {TeamType} from "../models/team";
   import {teamStatusEnum} from "../enums/TeamType.ts";
-  import {onMounted, ref} from "vue";
+  import {computed, onMounted, ref} from "vue";
   import {getCurrentUser} from "../services/user.ts";
   import myAxios from "../config/myAxios.ts";
   import {showFailToast, showSuccessToast} from "vant";
@@ -58,6 +70,11 @@
     // 获取 currentUser
     currentUser.value = await getCurrentUser();
   });
+
+  // 最多显示四个头像
+  const maxFourUsers = (team: TeamType) => {
+    return team.userList.slice(0,4);
+  }
 
   const showPasswordDialog = ref(false);
   const password = ref();
