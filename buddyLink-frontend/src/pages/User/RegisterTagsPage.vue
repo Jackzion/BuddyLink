@@ -179,7 +179,7 @@ const editUserTags = async () =>{
     if(res?.code === 0){
       showSuccessToast("修改成功");
       showToast('修改成功');
-      router.back(); // 返回上一页面
+      router.back() // 返回上一页面
     }else{
       showToast('修改失败' + (`${res.description}` ? `，${res.description}` : ''));
     }

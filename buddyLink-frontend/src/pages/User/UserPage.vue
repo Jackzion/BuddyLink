@@ -17,24 +17,26 @@
       text="左滑右滑，交友不停！这里是你的友情工厂！Link Up, Chill Out – The Ultimate Buddy Connect!"
   />
 <!--  用户信息-->
-  <div v-if="user" class="user-top">
+  <div v-if="user">
     <div class="user-profile-top">
       <van-image
           round
-          width="5.5rem"
-          height="5.5rem"
+          width="10rem"
+          height="10rem"
           :src="user.avatarUrl"
           style="margin-top: 15px; margin-left: 15px; box-shadow: 0 0 15px rgba(0, 0, 0, 0.4);"
       />
-      <div class="user-profile">
-        <h3>{{ user.username }}</h3>
-        <van-space wrap v-for="tag in JSON.parse(user.tags)">
-          <van-tag color="#ffe1e1" text-color="#ad0000" style="margin-right: 4px">
-            {{ tag }}
-          </van-tag>
-        </van-space>
-      </div>
+        <h2>{{ user.username }}</h2>
+        <div style="margin: -10px">
+          <van-space wrap v-for="tag in JSON.parse(user.tags)">
+            <van-tag color="#ffe1e1" text-color="#ad0000" style="margin-right: 4px">
+              {{ tag }}
+            </van-tag>
+          </van-space>
+          <van-icon name="add-o" @click = "toTagPage" />
+        </div>
     </div>
+    <van-divider :style="{ color: '#1989fa', borderColor: '#1989fa', padding: '0 16px' }" />
 <!--    点赞，收藏，博客，粉丝数-->
     <div class="user-profile-bottom">
       <div class="user-profile-bottom-container">
@@ -120,7 +122,7 @@
     <van-button type="primary" style="width: 320px; margin-top: 10px" @click="userLogout">退出登录</van-button>
   </div>
   <van-sticky>
-    <van-tabbar route @change="onChange">
+    <van-tabbar route >
       <van-tabbar-item to="/" icon="home-o" name="index">主页</van-tabbar-item>
       <van-tabbar-item to="/blog" icon="notes-o" name="friend">博客</van-tabbar-item>
       <van-tabbar-item to="/message" icon="comment-o" name="message">消息</van-tabbar-item>
@@ -131,14 +133,17 @@
 </template>
 
 <script setup lang="ts">
-import {onMounted, ref} from "vue";
-import {useRouter} from "vue-router";
+import {onActivated, onMounted, ref} from "vue";
+import {onBeforeRouteUpdate, useRoute, useRouter} from "vue-router";
 import {showToast} from "vant";
 import {getCurrentUser} from "../../services/user.ts";
 import myAxios from "../../config/myAxios.ts";
 import {CardListType} from "../../enums/CardListType.ts";
+import {TagsType} from "../../enums/TagsType.ts";
+import {watch} from "fs";
 
 const router = useRouter();
+const route = useRoute();
 const user = ref();
 
 const followNum = ref(0);
@@ -146,7 +151,12 @@ const blogNum = ref(0);
 const starBlogNum = ref(0);
 const likeBlogNum = ref(0);
 
+// todo : route.back() 因为缓存不会再次触发 onMounted ，所以需要手动触发(刷新)
 onMounted(async () => {
+  await fetchUserData();
+});
+
+const fetchUserData = async () => {
   // 获取 userVO
   user.value = await getCurrentUser();
   // 获取 userBlogVO
@@ -156,8 +166,13 @@ onMounted(async () => {
     followNum.value = res.data.followNum;
     starBlogNum.value = res.data.starBlogNum;
     likeBlogNum.value = res.data.likeBlogNum;
+  }else{
+    showToast({
+      message: res.message,
+      type: 'fail'
+    })
   }
-});
+}
 
 // 跳转到关注页面
 const toFollow = (type: number) => {
@@ -237,6 +252,16 @@ const toActivityPage = () => {
   router.push('/buddy/activity');
 };
 
+const toTagPage = () => {
+  router.push({
+    path: '/user/registerTags',
+    query:{
+      type : TagsType.EDIT,
+      userId: user.value.id,
+    }
+  })
+};
+
 // 退出登录
 const userLogout = async () => {
   // 请求
@@ -272,17 +297,17 @@ const onClickRight = () => {
 
 .user-profile-top {
   display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .user-profile {
-  margin-top: 10px;
-  margin-left: 10px;
+  margin: auto;
   background: white;
-  width: 216px;
-  height: 100px;
 }
 
 .user-profile-bottom {
+  margin-top: 10px;
   width: 100%;
   height: 70px;
   display: flex;
