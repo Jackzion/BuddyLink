@@ -1,0 +1,59 @@
+PUT /buddy_user
+{
+  "mappings": {
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "userName":{
+        "type": "text",
+        "analyzer": "ik_max_word"
+      },
+      "profile":{
+        "type": "text",
+        "analyzer": "ik_max_word"
+      },
+      "tags":{
+        "type": "text",
+        "analyzer": "ik_max_word"
+      },
+      "avatarUrl":{
+        "type": "keyword",
+        "index": false
+      },
+      "updateTime":{
+        "type": "date"
+      }
+    }
+  }
+}
+
+PUT /buddy_team
+{
+  "mappings": {
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "teamName":{
+        "type": "text",
+        "analyzer": "ik_max_word"
+      },
+      "description":{
+        "type": "text",
+        "analyzer": "ik_max_word"
+      },
+      "maxNum":{
+        "type": "integer",
+        "index": false
+      },
+      "expireTime":{
+        "type": "date"
+      } ,
+      "updateTime":{
+        "type": "date"
+      }
+    }
+  }
+}
+

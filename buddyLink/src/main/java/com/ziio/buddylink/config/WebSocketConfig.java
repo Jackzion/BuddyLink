@@ -17,8 +17,8 @@ public class WebSocketConfig {
      *
      * @return {@link ServerEndpointExporter}
      */
-    @Bean
-    public ServerEndpointExporter serverEndpointExporter() {
-        return new ServerEndpointExporter();
-    }
+//    @Bean
+//    public ServerEndpointExporter serverEndpointExporter() {
+//        return new ServerEndpointExporter();
+//    }
 }

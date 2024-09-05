@@ -1,0 +1,85 @@
+## logstash配置文件
+# user
+input {
+  jdbc {
+    jdbc_driver_library => "D:\Code\elaticsearch\logstash-7.17.9\config\mysql-connector-java-8.0.29.jar"
+    jdbc_driver_class => "com.mysql.jdbc.Driver"
+    jdbc_connection_string => "jdbc:mysql://localhost:3306/buddy"
+    jdbc_user => "root"
+    jdbc_password => "1234"
+    statement => "SELECT * from user where updateTime > :sql_last_value and updateTime < now() order by updateTime desc"
+    tracking_column => "updatetime"
+    tracking_column_type => "timestamp"
+    use_column_value => true
+    parameters => { "favorite_artist" => "Beethoven" }
+    schedule => "*/5 * * * * *"
+    jdbc_default_timezone => "Asia/Shanghai"
+    last_run_metadata_path => "D:\Code\elaticsearch\logstash-7.17.9\data\plugins\inputs\jdbc\user_last_run.txt"
+  }
+}
+
+filter {
+    mutate {
+        rename => {
+            "avatarurl" => "avatarUrl"
+            "updatetime" => "updateTime"
+            "username" => "userName"
+        }
+    	   remove_field => ["useraccount", "gender","userpassword","phone","email","userstatus","createtime","isdelete","userrole","planetcode","longitude","dimension","blognum","blogviewnum","follownum","fannum","score"]
+
+    }
+}
+
+output {
+  stdout { codec => rubydebug }
+  elasticsearch {
+    hosts => "http://localhost:9200"
+    index => "buddy_user"
+    document_id => "%{id}"
+  }
+}
+
+# team
+input {
+  jdbc {
+    jdbc_driver_library => "D:\Code\elaticsearch\logstash-7.17.9\config\mysql-connector-java-8.0.29.jar"
+    jdbc_driver_class => "com.mysql.jdbc.Driver"
+    jdbc_connection_string => "jdbc:mysql://localhost:3306/buddy"
+    jdbc_user => "root"
+    jdbc_password => "1234"
+    statement => "SELECT * from team where updateTime > :sql_last_value and updateTime < now() order by updateTime desc"
+    tracking_column => "updatetime"
+    tracking_column_type => "timestamp"
+    use_column_value => true
+    parameters => { "favorite_artist" => "Beethoven" }
+    schedule => "*/5 * * * * *"
+    jdbc_default_timezone => "Asia/Shanghai"
+    last_run_metadata_path => "D:\Code\elaticsearch\logstash-7.17.9\data\plugins\inputs\jdbc\team_last_run.txt"
+  }
+}
+
+filter {
+    mutate {
+        rename => {
+            "teamname" => "teamName"
+            "expiretime" => "expireTime"
+            "updatetime" => "updateTime"
+            "maxnum" => "maxNum"
+        }
+    	   remove_field => ["userid","status","password","createtime","isdelete"]
+
+    }
+}
+
+output {
+  stdout { codec => rubydebug }
+  elasticsearch {
+    hosts => "http://localhost:9200"
+    index => "buddy_team"
+    document_id => "%{id}"
+  }
+}
+
+
+
+

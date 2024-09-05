@@ -16,7 +16,7 @@
       <van-button v-if="team.hasJoin && team.userId === currentUser?.id" size="normal" type="warning" @click.stop="doDeleteTeam(team.id)">解散</van-button>
     </template>
 <!--      队伍头像列表-->
-    <template #price>
+    <template v-if="team.userList" #price>
       <van-image v-for = "user in maxFourUsers(team)" style="margin: 5px"
           round
           width="2rem"
