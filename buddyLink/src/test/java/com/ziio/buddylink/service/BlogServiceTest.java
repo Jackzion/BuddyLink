@@ -5,7 +5,10 @@ import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ziio.buddylink.esDao.BlogEsRepository;
 import com.ziio.buddylink.esDao.UserEsRepository;
+import com.ziio.buddylink.mapper.BlogMapper;
+import com.ziio.buddylink.mapper.UserMapper;
 import com.ziio.buddylink.model.domain.Blog;
+import com.ziio.buddylink.model.domain.User;
 import com.ziio.buddylink.model.es.BlogEsDTO;
 import com.ziio.buddylink.model.es.UserEsDTO;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +32,7 @@ import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilde
 
 import javax.annotation.Resource;
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -81,6 +85,11 @@ class BlogServiceTest {
     @Resource
     private ElasticsearchRestTemplate elasticsearchRestTemplate;
 
+    @Resource
+    private BlogMapper blogMapper;
+
+    @Resource
+    private UserMapper userMapper;
 
     @Test
     void testSelectByAny() {
@@ -109,6 +118,12 @@ class BlogServiceTest {
         List<Long> esIdList = searchHits1.stream().map(searchHit -> searchHit.getContent().getId()).collect(Collectors.toList());
         System.out.println(esIdList);
         // todo：查出结果后，根据id得到数据库全数据，数据同步
+        // 从数据库获取完整数据
+        List<User> userList = userMapper.selectBatchIds(esIdList);
+        // 对 blogList 重排序
+        List<User> sortBlogList = userList.stream()
+                .sorted(Comparator.comparingInt(user -> esIdList.indexOf(user.getId()))).collect(Collectors.toList());
+        System.out.println(sortBlogList);
         // 数据同步 ： 将 postIdList（elastic） 上不存在于 postList（mysql） 的数据删除
 //        List<Post> postList = baseMapper.selectBatchIds(postIdList);
 //        if (postList != null) {

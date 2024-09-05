@@ -12,6 +12,7 @@ import com.ziio.buddylink.model.domain.Blog;
 import com.ziio.buddylink.model.domain.Comment;
 import com.ziio.buddylink.model.domain.Message;
 import com.ziio.buddylink.model.domain.User;
+import com.ziio.buddylink.model.es.UserEsDTO;
 import com.ziio.buddylink.model.request.*;
 import com.ziio.buddylink.model.vo.BlogUserVO;
 import com.ziio.buddylink.model.vo.BlogVO;
@@ -28,7 +29,18 @@ import com.ziio.buddylink.utils.JsonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.sort.SortBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
+import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
+import org.springframework.data.elasticsearch.core.SearchHit;
+import org.springframework.data.elasticsearch.core.SearchHits;
+import org.springframework.data.elasticsearch.core.query.NativeSearchQuery;
+import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -68,6 +80,12 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog>
 
     @Resource
     private RedisBloomFilter redisBloomFilter;
+
+    @Resource
+    private ElasticsearchRestTemplate elasticsearchRestTemplate;
+
+    @Resource
+    private BlogMapper blogMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -130,7 +148,8 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog>
     @Override
     public List<BlogVO> listBlogs(BlogQueryRequest blogQueryRequest, HttpServletRequest request) {
         // 获取参数
-        String title = blogQueryRequest.getTitle();
+        // todo : 改为 es 查询 ，非数据库模糊查询
+        String title = blogQueryRequest.getSearchText();
         int pageSize = blogQueryRequest.getPageSize();
         int pageNum = blogQueryRequest.getPageNum();
         long start = (pageNum - 1) * pageSize;
@@ -152,6 +171,57 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog>
             return blogVO;
         }).collect(Collectors.toList());
         return bloVOsList;
+    }
+
+    @Override
+    public List<BlogVO> listBlogsFromEs(BlogQueryRequest blogQueryRequest, HttpServletRequest request) {
+        // 获取参数
+        String searchText = blogQueryRequest.getSearchText();
+        int pageSize = blogQueryRequest.getPageSize();
+        int pageNum = blogQueryRequest.getPageNum();
+        // es 查询
+        // 构造 query
+        BoolQueryBuilder boolQueryBuilder = new BoolQueryBuilder();
+        boolQueryBuilder.filter(QueryBuilders.termQuery("isdelete", 0));
+        if(searchText != null){
+            boolQueryBuilder.should(QueryBuilders.matchQuery("profile", searchText));
+            boolQueryBuilder.should(QueryBuilders.matchQuery("tags", searchText));
+            boolQueryBuilder.should(QueryBuilders.matchQuery("userName", searchText));
+            boolQueryBuilder.minimumShouldMatch(1);
+        }
+        // 分页
+        org.springframework.data.domain.PageRequest pageRequest = PageRequest.of(pageNum-1, pageSize);
+        // 排序器 , 默认按 相似度 score 排序
+        SortBuilder<?> sortBuilder = SortBuilders.scoreSort().order(SortOrder.DESC);
+        // 构造查询
+        NativeSearchQuery searchQuery = new NativeSearchQueryBuilder()
+                .withQuery(boolQueryBuilder)
+                .withPageable(pageRequest)
+                .withSorts(sortBuilder).build();
+        // 查找并拆分
+        SearchHits<UserEsDTO> searchHits = elasticsearchRestTemplate.search(searchQuery, UserEsDTO.class);
+        List<SearchHit<UserEsDTO>> searchHits1 = searchHits.getSearchHits();
+        List<Long> esIdList = searchHits1.stream().map(searchHit -> searchHit.getContent().getId()).collect(Collectors.toList());
+        System.out.println(esIdList);
+        // 从数据库获取完整数据
+        List<Blog> blogList = blogMapper.selectBatchIds(esIdList);
+        // 对 blogList 重排序
+        List<Blog> sortBlogList = blogList.stream()
+                .sorted(Comparator.comparingInt(blog -> esIdList.indexOf(blog.getId()))).collect(Collectors.toList());
+        // 封装为 blogVO
+        List<BlogVO> blogVOList = blogList.stream().map(blog -> {
+            // 封装为 blogVO
+            // todo: 没有补充 点赞 ， 收藏
+            BlogVO blogVO = new BlogVO();
+            BeanUtils.copyProperties(blog, blogVO);
+            // 补充 userVo
+            User user = userService.getById(blog.getUserId());
+            BlogUserVO blogUserVO = new BlogUserVO();
+            BeanUtils.copyProperties(user, blogUserVO);
+            blogVO.setBlogUserVO(blogUserVO);
+            return blogVO;
+        }).collect(Collectors.toList());
+        return blogVOList;
     }
 
     @Override
@@ -487,7 +557,7 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog>
         // 提取效验参数
         User loginUser = userService.getLoginUser(request);
         long loginUserId = loginUser.getId();
-        String title = blogQueryRequest.getTitle();
+        String title = blogQueryRequest.getSearchText();
         int pageSize = blogQueryRequest.getPageSize();
         int pageNum = blogQueryRequest.getPageNum();
         if (!redisBloomFilter.userIsContained(id)) {
@@ -534,7 +604,7 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog>
     @Override
     public List<BlogVO> listInteractionBlogs(BlogQueryRequest blogQueryRequest, HttpServletRequest request) {
         // 提取效验参数
-        String title = blogQueryRequest.getTitle();
+        String title = blogQueryRequest.getSearchText();
         Long userId = blogQueryRequest.getUserId();
         Integer type = blogQueryRequest.getType();
         int pageSize = blogQueryRequest.getPageSize();

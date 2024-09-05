@@ -32,6 +32,8 @@ public interface BlogService extends IService<Blog> {
      */
     List<BlogVO> listBlogs(BlogQueryRequest blogQueryRequest, HttpServletRequest request);
 
+    List<BlogVO> listBlogsFromEs(BlogQueryRequest blogQueryRequest, HttpServletRequest request);
+
     /**
      * 按 id 搜索 blog
      * @param id

@@ -29,6 +29,10 @@
         updateTime,isDelete
     </sql>
 
+<!--    <select id="selectBlogByPage" resultType="com.ziio.buddylink.model.domain.Blog">-->
+<!--        select * from blog where isDelete = 0 limit #{start},#{end}-->
+<!--    </select>-->
+
     <select id="selectBlogByPage" resultType="com.ziio.buddylink.model.domain.Blog">
         select * from blog where isDelete = 0
         <if test="title != null and title != ''">
@@ -36,4 +40,6 @@
         </if>
         limit #{start},#{end}
     </select>
+
+    <select id="findByIdsInOrder" resultType="com.ziio.buddylink.model.domain.Blog"></select>
 </mapper>

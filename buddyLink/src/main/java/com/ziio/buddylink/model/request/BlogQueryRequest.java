@@ -9,7 +9,8 @@ import java.io.Serializable;
 @Accessors(chain = true)
 public class BlogQueryRequest extends PageRequest implements Serializable {
 
-    private String title;
+    // searchText for title , tags or content
+    private String searchText;
 
     private Long userId;
 
