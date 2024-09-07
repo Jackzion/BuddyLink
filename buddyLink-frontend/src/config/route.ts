@@ -32,6 +32,7 @@ import FriendPage from "../pages/Fridend/FriendPage.vue";
 import UserUpdatePage from "../pages/User/UserUpdatePage.vue";
 import UserEditPage from "../pages/User/UserEditPage.vue";
 import TeamAddPage from "../pages/Team/TeamAddPage.vue";
+import AggregatedSearchPage from "../pages/Other/AggregatedSearchPage.vue";
 
 
 const routes = [
@@ -69,6 +70,7 @@ const routes = [
     {path: '/search', title: '搜索', component: SearchPage},
     {path: '/buddy/activity', title: '创作活动', component: ActivityPage},
     {path: '/buddy/feedback', title: '反馈', component: FeedbackPage},
+    {path: '/kiioSearch', title: 'KiioSearch', component: AggregatedSearchPage},
 ];
 
 export default routes;
