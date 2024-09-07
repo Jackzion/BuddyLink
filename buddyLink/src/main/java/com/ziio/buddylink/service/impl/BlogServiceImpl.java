@@ -12,6 +12,7 @@ import com.ziio.buddylink.model.domain.Blog;
 import com.ziio.buddylink.model.domain.Comment;
 import com.ziio.buddylink.model.domain.Message;
 import com.ziio.buddylink.model.domain.User;
+import com.ziio.buddylink.model.es.BlogEsDTO;
 import com.ziio.buddylink.model.es.UserEsDTO;
 import com.ziio.buddylink.model.request.*;
 import com.ziio.buddylink.model.vo.BlogUserVO;
@@ -160,7 +161,6 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog>
         List<Blog> blogList = this.baseMapper.selectBlogByPage(start, end, title);
         List<BlogVO> bloVOsList = blogList.stream().map(blog -> {
             // 封装为 blogVO
-            // todo: 没有补充 点赞 ， 收藏
             BlogVO blogVO = new BlogVO();
             BeanUtils.copyProperties(blog, blogVO);
             // 补充 userVo
@@ -183,11 +183,13 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog>
         // 构造 query
         BoolQueryBuilder boolQueryBuilder = new BoolQueryBuilder();
         boolQueryBuilder.filter(QueryBuilders.termQuery("isdelete", 0));
-        if(searchText != null){
-            boolQueryBuilder.should(QueryBuilders.matchQuery("profile", searchText));
+        if(!StringUtils.isEmpty(searchText)){
+            boolQueryBuilder.should(QueryBuilders.matchQuery("content", searchText));
             boolQueryBuilder.should(QueryBuilders.matchQuery("tags", searchText));
-            boolQueryBuilder.should(QueryBuilders.matchQuery("userName", searchText));
+            boolQueryBuilder.should(QueryBuilders.matchQuery("title", searchText));
             boolQueryBuilder.minimumShouldMatch(1);
+        }else{
+            boolQueryBuilder.must(QueryBuilders.matchAllQuery());
         }
         // 分页
         org.springframework.data.domain.PageRequest pageRequest = PageRequest.of(pageNum-1, pageSize);
@@ -199,19 +201,25 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog>
                 .withPageable(pageRequest)
                 .withSorts(sortBuilder).build();
         // 查找并拆分
-        SearchHits<UserEsDTO> searchHits = elasticsearchRestTemplate.search(searchQuery, UserEsDTO.class);
-        List<SearchHit<UserEsDTO>> searchHits1 = searchHits.getSearchHits();
+        SearchHits<BlogEsDTO> searchHits = elasticsearchRestTemplate.search(searchQuery, BlogEsDTO.class);
+        List<SearchHit<BlogEsDTO>> searchHits1 = searchHits.getSearchHits();
         List<Long> esIdList = searchHits1.stream().map(searchHit -> searchHit.getContent().getId()).collect(Collectors.toList());
         System.out.println(esIdList);
-        // 从数据库获取完整数据
-        List<Blog> blogList = blogMapper.selectBatchIds(esIdList);
+        // 判断 esIdList 是否为空
+        List<Blog> blogList = null;
+        if(CollectionUtils.isNotEmpty(esIdList)){
+            // 从数据库获取完整数据
+            blogList = blogMapper.selectBatchIds(esIdList);
+        }else{
+            // 返回空
+            return new ArrayList<>();
+        }
         // 对 blogList 重排序
         List<Blog> sortBlogList = blogList.stream()
                 .sorted(Comparator.comparingInt(blog -> esIdList.indexOf(blog.getId()))).collect(Collectors.toList());
         // 封装为 blogVO
-        List<BlogVO> blogVOList = blogList.stream().map(blog -> {
+        List<BlogVO> blogVOList = sortBlogList.stream().map(blog -> {
             // 封装为 blogVO
-            // todo: 没有补充 点赞 ， 收藏
             BlogVO blogVO = new BlogVO();
             BeanUtils.copyProperties(blog, blogVO);
             // 补充 userVo
@@ -221,6 +229,7 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog>
             blogVO.setBlogUserVO(blogUserVO);
             return blogVO;
         }).collect(Collectors.toList());
+        // todo : 增加 mysql 同步逻辑
         return blogVOList;
     }
 

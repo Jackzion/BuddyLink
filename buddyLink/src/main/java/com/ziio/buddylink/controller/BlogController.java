@@ -41,6 +41,18 @@ public class BlogController {
         return ResultUtils.success(blogVOList);
     }
 
+    @PostMapping("/search/es")
+    public BaseResponse<List<BlogVO>> listBlogsFromEs(@RequestBody BlogQueryRequest blogQueryRequest, HttpServletRequest request) {
+        if (blogQueryRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        if (blogQueryRequest.getPageNum() <= 0 || blogQueryRequest.getPageSize() <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        List<BlogVO> blogVOList = blogService.listBlogsFromEs(blogQueryRequest, request);
+        return ResultUtils.success(blogVOList);
+    }
+
     @GetMapping("/get/{id}")
     public BaseResponse<BlogVO> getBlogById(@PathVariable("id") Long id, HttpServletRequest request) {
         if (id == null || id <= 0) {

@@ -14,9 +14,11 @@ import com.ziio.buddylink.exception.BusinessException;
 import com.ziio.buddylink.manager.RedisBloomFilter;
 import com.ziio.buddylink.manager.RedisLimiterManager;
 import com.ziio.buddylink.manager.SignInManager;
-import com.ziio.buddylink.model.vo.SignInInfoVO;
-import com.ziio.buddylink.model.vo.UserInfoVO;
-import com.ziio.buddylink.model.vo.UserVO;
+import com.ziio.buddylink.model.domain.Blog;
+import com.ziio.buddylink.model.domain.Team;
+import com.ziio.buddylink.model.es.UserEsDTO;
+import com.ziio.buddylink.model.request.UserQueryRequest;
+import com.ziio.buddylink.model.vo.*;
 import com.ziio.buddylink.model.domain.User;
 import com.ziio.buddylink.model.request.UserEditRequest;
 import com.ziio.buddylink.model.request.UserRegisterRequest;
@@ -27,7 +29,18 @@ import com.ziio.buddylink.utils.DateUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.util.Pair;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.sort.SortBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
+import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
+import org.springframework.data.elasticsearch.core.SearchHit;
+import org.springframework.data.elasticsearch.core.SearchHits;
+import org.springframework.data.elasticsearch.core.query.NativeSearchQuery;
+import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.data.geo.*;
 import org.springframework.data.redis.connection.RedisGeoCommands;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -38,10 +51,7 @@ import org.springframework.util.DigestUtils;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -70,6 +80,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Resource
     private SignInManager signInManager;
+
+    @Resource
+    private ElasticsearchRestTemplate elasticsearchRestTemplate;
+
+    @Resource
+    private UserMapper userMapper;
 
 
     @Resource
@@ -402,6 +418,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR, "缓存写入失败");
             }
         }
+        // 重新从缓存拿数据
         userVOList = stringRedisTemplate.opsForList().range(redisKey, start, end)
                 .stream().map(UserServiceImpl::transferToUserVO).collect(Collectors.toList());
         return userVOList;
@@ -588,6 +605,88 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         long userId = loginUser.getId();
         String key = RedisConstant.USER_SIGNIN_KEY + DateUtils.getNowYear() + ":" + userId;
         return signInManager.getSignInInfo(key);
+    }
+
+    @Override
+    public List<UserVO> listUsersFromEs(UserQueryRequest userQueryRequest, HttpServletRequest request) {
+        // 获取参数
+        User loginUser = this.getLoginUser(request);
+        String searchText = userQueryRequest.getSearchText();
+        int pageSize = userQueryRequest.getPageSize();
+        int pageNum = userQueryRequest.getPageNum();
+        // es 查询
+        // 构造 query
+        BoolQueryBuilder boolQueryBuilder = new BoolQueryBuilder();
+        boolQueryBuilder.filter(QueryBuilders.termQuery("isdelete", 0));
+        if(!StringUtils.isEmpty(searchText)){
+            boolQueryBuilder.should(QueryBuilders.matchQuery("profile", searchText));
+            boolQueryBuilder.should(QueryBuilders.matchQuery("tags", searchText));
+            boolQueryBuilder.should(QueryBuilders.matchQuery("userName", searchText));
+            boolQueryBuilder.minimumShouldMatch(1);
+        }else{
+            boolQueryBuilder.must(QueryBuilders.matchAllQuery());
+        }
+        // 分页
+        org.springframework.data.domain.PageRequest pageRequest = PageRequest.of(pageNum-1, pageSize);
+        // 排序器 , 默认按 相似度 score 排序
+        SortBuilder<?> sortBuilder = SortBuilders.scoreSort().order(SortOrder.DESC);
+        // 构造查询
+        NativeSearchQuery searchQuery = new NativeSearchQueryBuilder()
+                .withQuery(boolQueryBuilder)
+                .withPageable(pageRequest)
+                .withSorts(sortBuilder).build();
+        // 查找并拆分
+        SearchHits<UserEsDTO> searchHits = elasticsearchRestTemplate.search(searchQuery, UserEsDTO.class);
+        List<SearchHit<UserEsDTO>> searchHits1 = searchHits.getSearchHits();
+        List<Long> esIdList = searchHits1.stream().map(searchHit -> searchHit.getContent().getId()).collect(Collectors.toList());
+        log.info("esIdList: {}", esIdList);
+        // 判断 esIdList 是否为空
+        List<User> userList = null;
+        if(org.apache.commons.collections.CollectionUtils.isNotEmpty(esIdList)){
+            // 从数据库获取完整数据
+            userList = userMapper.selectBatchIds(esIdList);
+        }else{
+            // 返回空
+            return new ArrayList<>();
+        }
+        // 对 userList 重排序
+        List<User> sortUserList = userList.stream()
+                .sorted(Comparator.comparingInt(user -> esIdList.indexOf(user.getId()))).collect(Collectors.toList());
+        // 封装为 UserVo
+        List<UserVO> userVOList = sortUserList.stream().map(user -> {
+            // 封装为 userVO
+            // 查询距离
+            String redisUserGeoKey = RedisConstant.USER_GEO_KEY;
+            Distance distance = stringRedisTemplate.opsForGeo().distance(redisUserGeoKey,
+                    String.valueOf(loginUser.getId()), String.valueOf(user.getId()),
+                    RedisGeoCommands.DistanceUnit.KILOMETERS);
+            Double value = distance.getValue();
+            // 创建UserVO对象并设置属性
+            UserVO userVO = new UserVO();
+            userVO.setId(user.getId());
+            userVO.setUsername(user.getUsername());
+            userVO.setUserAccount(user.getUserAccount());
+            userVO.setAvatarUrl(user.getAvatarUrl());
+            userVO.setGender(user.getGender());
+            userVO.setProfile(user.getProfile());
+            userVO.setPhone(user.getPhone());
+            userVO.setEmail(user.getEmail());
+            userVO.setUserStatus(user.getUserStatus());
+            userVO.setCreateTime(user.getCreateTime());
+            userVO.setUpdateTime(user.getUpdateTime());
+            userVO.setUserRole(user.getUserRole());
+            userVO.setTags(user.getTags());
+            if (value != null) {
+                userVO.setDistance(value); // 设置距离值
+            } else {
+                userVO.setDistance(0.0);
+            }
+            return userVO;
+        }).collect(Collectors.toList());
+        // todo : 增加 mysql 同步逻辑
+        // todo ： 增加高亮返回
+
+        return userVOList;
     }
 
     private static UserVO transferToUserVO(String jsonStr) {

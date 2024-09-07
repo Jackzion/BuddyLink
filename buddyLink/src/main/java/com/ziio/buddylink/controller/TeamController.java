@@ -138,7 +138,6 @@ public class TeamController {
         userTeamJoinQueryWrapper.in("teamId", teamIdList);
         List<UserTeam> userTeamList = userTeamService.list(userTeamJoinQueryWrapper);
         // 队伍id => 加入这个队伍的用户列表
-        // todo : 设置 TeamUserVo 中的 UserVO list ， 设置成头像型
         Map<Long, List<UserTeam>> teamIdUserTeamList = userTeamList.stream().collect(Collectors.groupingBy(UserTeam::getTeamId));
         teamList.forEach(team ->{
             List<UserVO> UserVOList = teamIdUserTeamList.get(team.getId())
@@ -154,6 +153,18 @@ public class TeamController {
             team.setHasJoinNum(teamIdUserTeamList.getOrDefault(team.getId(), new ArrayList<>()).size());
         });
         return ResultUtils.success(teamList);
+    }
+
+    @PostMapping("/search/es")
+    public BaseResponse<List<TeamUserVO>> listTeamsFromEs(@RequestBody TeamQueryRequest teamQueryRequest, HttpServletRequest request) {
+        if (teamQueryRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        if (teamQueryRequest.getPageNum() <= 0 || teamQueryRequest.getPageSize() <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        List<TeamUserVO> userVOList = teamService.listTeamsFromEs(teamQueryRequest, request);
+        return ResultUtils.success(userVOList);
     }
 
     @GetMapping("/list/my/join")
@@ -190,6 +201,7 @@ public class TeamController {
         IPage<Team> teamIPage = teamService.page(page, queryWrapper);
         return ResultUtils.success(teamIPage);
     }
+
 
     @PostMapping("/join")
     public BaseResponse<Boolean> joinTeam(@RequestBody TeamJoinRequest teamJoinRequest, HttpServletRequest request){

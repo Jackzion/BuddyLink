@@ -141,4 +141,11 @@ class BlogServiceTest {
 //        page.setRecords(resourceList);
     }
 
+    @Test
+    public void StringTest(){
+        String searchText = "";
+        boolean f = !StringUtils.isEmpty(searchText);
+        System.out.println(f);
+    }
+
 }

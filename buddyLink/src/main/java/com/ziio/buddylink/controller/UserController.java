@@ -1,18 +1,17 @@
 package com.ziio.buddylink.controller;
 
+import com.aliyun.oss.model.UserQos;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.ziio.buddylink.common.BaseResponse;
 import com.ziio.buddylink.common.ErrorCode;
 import com.ziio.buddylink.common.ResultUtils;
 import com.ziio.buddylink.constant.UserConstant;
 import com.ziio.buddylink.exception.BusinessException;
+import com.ziio.buddylink.model.request.*;
+import com.ziio.buddylink.model.vo.BlogVO;
 import com.ziio.buddylink.model.vo.SignInInfoVO;
 import com.ziio.buddylink.model.vo.UserInfoVO;
 import com.ziio.buddylink.model.domain.User;
-import com.ziio.buddylink.model.request.DeleteRequest;
-import com.ziio.buddylink.model.request.UserEditRequest;
-import com.ziio.buddylink.model.request.UserLoginRequest;
-import com.ziio.buddylink.model.request.UserRegisterRequest;
 import com.ziio.buddylink.model.vo.UserVO;
 import com.ziio.buddylink.service.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -133,6 +132,18 @@ public class UserController {
         }
         List<UserVO> userVOS = userService.recommendUsers(pageSize, pageNum, request);
         return ResultUtils.success(userVOS);
+    }
+
+    @PostMapping("/search/es")
+    public BaseResponse<List<UserVO>> listUsersFromEs(@RequestBody UserQueryRequest userQueryRequest, HttpServletRequest request) {
+        if (userQueryRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        if (userQueryRequest.getPageNum() <= 0 || userQueryRequest.getPageSize() <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        List<UserVO> userVOList = userService.listUsersFromEs(userQueryRequest, request);
+        return ResultUtils.success(userVOList);
     }
 
     /**

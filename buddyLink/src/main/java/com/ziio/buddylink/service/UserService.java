@@ -1,5 +1,7 @@
 package com.ziio.buddylink.service;
 
+import com.ziio.buddylink.model.request.UserQueryRequest;
+import com.ziio.buddylink.model.vo.BlogVO;
 import com.ziio.buddylink.model.vo.SignInInfoVO;
 import com.ziio.buddylink.model.vo.UserInfoVO;
 import com.ziio.buddylink.model.vo.UserVO;
@@ -135,4 +137,7 @@ public interface UserService extends IService<User> {
     boolean userSigIn(HttpServletRequest request);
 
     SignInInfoVO getSignedDates(HttpServletRequest request);
+
+    List<UserVO> listUsersFromEs(UserQueryRequest userQueryRequest, HttpServletRequest request);
+
 }

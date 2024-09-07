@@ -80,4 +80,6 @@ public interface TeamService extends IService<Team> {
      * @return
      */
     boolean quitTeam(TeamQuitRequest teamQuitRequest, User loginUser);
+
+    List<TeamUserVO> listTeamsFromEs(TeamQueryRequest teamQueryRequest, HttpServletRequest request);
 }

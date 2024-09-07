@@ -8,14 +8,19 @@ import com.ziio.buddylink.common.ErrorCode;
 import com.ziio.buddylink.common.ResultUtils;
 import com.ziio.buddylink.constant.RedisConstant;
 import com.ziio.buddylink.exception.BusinessException;
+import com.ziio.buddylink.model.domain.Blog;
 import com.ziio.buddylink.model.domain.Team;
 import com.ziio.buddylink.model.domain.User;
 import com.ziio.buddylink.model.domain.UserTeam;
 import com.ziio.buddylink.model.enums.TeamStatusEnum;
+import com.ziio.buddylink.model.es.TeamEsDTO;
+import com.ziio.buddylink.model.es.UserEsDTO;
 import com.ziio.buddylink.model.request.TeamJoinRequest;
 import com.ziio.buddylink.model.request.TeamQueryRequest;
 import com.ziio.buddylink.model.request.TeamQuitRequest;
 import com.ziio.buddylink.model.request.TeamUpdateRequest;
+import com.ziio.buddylink.model.vo.BlogUserVO;
+import com.ziio.buddylink.model.vo.BlogVO;
 import com.ziio.buddylink.model.vo.TeamUserVO;
 import com.ziio.buddylink.model.vo.UserVO;
 import com.ziio.buddylink.service.TeamService;
@@ -25,9 +30,20 @@ import com.ziio.buddylink.service.UserTeamService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.sort.SortBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
+import org.elasticsearch.search.sort.SortOrder;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
+import org.springframework.data.elasticsearch.core.SearchHit;
+import org.springframework.data.elasticsearch.core.SearchHits;
+import org.springframework.data.elasticsearch.core.query.NativeSearchQuery;
+import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,10 +52,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -61,6 +74,12 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
 
     @Resource
     private RedissonClient redissonClient;
+
+    @Resource
+    private ElasticsearchRestTemplate elasticsearchRestTemplate;
+
+    @Resource
+    private TeamMapper teamMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -466,6 +485,99 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "failed to remove user-team ");
         }
         return true;
+    }
+
+    @Override
+    public List<TeamUserVO> listTeamsFromEs(TeamQueryRequest teamQueryRequest, HttpServletRequest request) {
+        // 获取参数
+        User loginUser = userService.getLoginUser(request);
+        // todo : 策略模式减少重复申请构造 es 请求 ， 改为统一接口，不同 type
+        String searchText = teamQueryRequest.getSearchText();
+        int pageSize = teamQueryRequest.getPageSize();
+        int pageNum = teamQueryRequest.getPageNum();
+        // es 查询
+        // 构造 query
+        BoolQueryBuilder boolQueryBuilder = new BoolQueryBuilder();
+        boolQueryBuilder.filter(QueryBuilders.termQuery("isdelete", 0));
+        if(!StringUtils.isEmpty(searchText)){
+            boolQueryBuilder.should(QueryBuilders.matchQuery("description", searchText));
+            boolQueryBuilder.should(QueryBuilders.matchQuery("teamName", searchText));
+            boolQueryBuilder.minimumShouldMatch(1);
+        }else{
+            boolQueryBuilder.must(QueryBuilders.matchAllQuery());
+        }
+        // 分页
+        org.springframework.data.domain.PageRequest pageRequest = PageRequest.of(pageNum-1, pageSize);
+        // 排序器 , 默认按 相似度 score 排序
+        SortBuilder<?> sortBuilder = SortBuilders.scoreSort().order(SortOrder.DESC);
+        // 构造查询
+        NativeSearchQuery searchQuery = new NativeSearchQueryBuilder()
+                .withQuery(boolQueryBuilder)
+                .withPageable(pageRequest)
+                .withSorts(sortBuilder).build();
+        // 查找并拆分
+        SearchHits<TeamEsDTO> searchHits = elasticsearchRestTemplate.search(searchQuery, TeamEsDTO.class);
+        List<SearchHit<TeamEsDTO>> searchHits1 = searchHits.getSearchHits();
+        List<Long> esIdList = searchHits1.stream().map(searchHit -> searchHit.getContent().getId()).collect(Collectors.toList());
+        System.out.println(esIdList);
+        // 判断 esIdList 是否为空
+        List<Team> teamList = null;
+        if(CollectionUtils.isNotEmpty(esIdList)){
+            // 从数据库获取完整数据
+            teamList = teamMapper.selectBatchIds(esIdList);
+        }else{
+            // 返回空
+            return new ArrayList<>();
+        }
+        // 对 TeamList 重排序
+        List<Team> sortTeamList = teamList.stream()
+                .sorted(Comparator.comparingInt(team -> esIdList.indexOf(team.getId()))).collect(Collectors.toList());
+        // 封装为 TeamUserVo
+        List<TeamUserVO> teamUserVOList = sortTeamList.stream().map(team -> {
+            // 补充 UserVo
+            Long userId = team.getUserId();
+            User user = userService.getById(userId);
+            UserVO userVO = new UserVO();
+            TeamUserVO teamUserVO = new TeamUserVO();
+            BeanUtil.copyProperties(user,userVO);
+            BeanUtil.copyProperties(team,teamUserVO);
+            teamUserVO.setCreateUser(userVO);
+            return teamUserVO;
+        }).collect(Collectors.toList());
+        // 2、在 teamIdList 基础上 ，判断当前用户是否已加入队伍
+        QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
+        // 找出用户相关的队伍
+        userTeamQueryWrapper.eq("userId", loginUser.getId());
+        userTeamQueryWrapper.in("teamId", esIdList);
+        List<UserTeam> userTeamList = userTeamService.list(userTeamQueryWrapper);
+        // 已加入的队伍 id 集合
+        Set<Long> hasJoinTeamIdSet = userTeamList.stream().map(UserTeam::getTeamId).collect(Collectors.toSet());
+        teamUserVOList.forEach(teamUserVO -> {
+            boolean hasJoin = hasJoinTeamIdSet.contains(teamUserVO.getId());
+            teamUserVO.setHasJoin(hasJoin);
+        });
+        // 3、补充加入队伍的用户信息（人数）
+        QueryWrapper<UserTeam> userTeamJoinQueryWrapper = new QueryWrapper<>();
+        userTeamJoinQueryWrapper.in("teamId", esIdList);
+        userTeamList = userTeamService.list(userTeamJoinQueryWrapper);
+        // 队伍id => 加入这个队伍的用户列表
+        Map<Long, List<UserTeam>> teamIdUserTeamList = userTeamList.stream().collect(Collectors.groupingBy(UserTeam::getTeamId));
+        // 补充队伍里用户信息
+        teamUserVOList.forEach(teamUserVO ->{
+            List<UserVO> UserVOList = teamIdUserTeamList.get(teamUserVO.getId())
+                    .stream().map(UserTeam -> {
+                        User user = userService.getById(UserTeam.getUserId());
+                        UserVO userVO = new UserVO();
+                        BeanUtil.copyProperties(user, userVO);
+                        return userVO;
+                    }).collect(Collectors.toList());
+            teamUserVO.setUserList(UserVOList);
+        });
+        // 补充队伍人数
+        teamUserVOList.forEach(teamUserVO -> {
+            teamUserVO.setHasJoinNum(teamIdUserTeamList.getOrDefault(teamUserVO.getId(), new ArrayList<>()).size());
+        });
+        return teamUserVOList;
     }
 
     private long teamHasUserNum(Long teamId) {
