@@ -18,6 +18,7 @@ public class HttpSessionFilter implements Filter {
             throws IOException, ServletException {
         HttpServletRequest req = (HttpServletRequest) request;
         HttpSession session = req.getSession();
+        // 通过
         chain.doFilter(request, response);
     }
 

@@ -51,4 +51,11 @@ public interface MessageService extends IService<Message> {
      * @return
      */
     List<MessageVO> listMessages(MessageQueryRequest messageQueryRequest, HttpServletRequest request);
+
+    /**
+     * 获取用户未读消息数量 (todo: 整合获取好友发送的 Unread chatMessage Num)
+     * @param request
+     * @return
+     */
+    long getURMessageNum(HttpServletRequest request);
 }

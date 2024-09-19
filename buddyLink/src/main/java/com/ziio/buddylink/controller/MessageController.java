@@ -21,6 +21,12 @@ public class MessageController {
     @Resource
     private MessageService messageService;
 
+    @GetMapping("/unread/count")
+    public BaseResponse<Long> getURMessageNum(HttpServletRequest request) {
+        long count = messageService.getURMessageNum(request);
+        return ResultUtils.success(count);
+    }
+
     @GetMapping("/interaction/list")
     public BaseResponse<InteractionMessageVO> listInteractionMessage(HttpServletRequest request) {
         InteractionMessageVO interactionMessageVO = messageService.listInteractionMessage(request);

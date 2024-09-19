@@ -14,7 +14,7 @@ public class RedisConfig {
         RedisTemplate<String, Object> template=new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
         template.setKeySerializer(new StringRedisSerializer());
-        template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+        template.setValueSerializer(new GenericJackson2JsonRedisSerializer()); // 设置新序列化器，默认 jdk 序列化，出现乱码问题
         return template;
     }
 }

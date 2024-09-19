@@ -165,6 +165,19 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message>
         }
         return messageVOList;
     }
+
+    @Override
+    public long getURMessageNum(HttpServletRequest request) {
+        // 获取当前用户
+        User loginUser = userService.getLoginUser(request);
+        // 查询 toId 未读消息数量
+        QueryWrapper<Message> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("toId", loginUser.getId());
+        queryWrapper.eq("isRead", 0);
+        long count = this.count(queryWrapper);
+        // todo : 考虑实时性的话，后面改 RabbitMq or kafka
+        return count;
+    }
 }
 
 

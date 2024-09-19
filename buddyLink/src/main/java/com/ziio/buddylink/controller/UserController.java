@@ -16,6 +16,7 @@ import com.ziio.buddylink.model.vo.UserVO;
 import com.ziio.buddylink.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.ibatis.executor.statement.StatementHandler;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -117,7 +118,7 @@ public class UserController {
         if (userEditRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        // 2.校验权限
+        // 2.校验权限 ， todo ： aop 实现统一效验接口
         User loginUser = userService.getLoginUser(request);
 
         // 3.触发更新
