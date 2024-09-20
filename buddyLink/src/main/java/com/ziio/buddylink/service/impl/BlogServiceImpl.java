@@ -19,6 +19,7 @@ import com.ziio.buddylink.model.vo.BlogUserVO;
 import com.ziio.buddylink.model.vo.BlogVO;
 import com.ziio.buddylink.model.vo.CommentVO;
 import com.ziio.buddylink.model.vo.UserBlogVO;
+import com.ziio.buddylink.publisher.MessagePublisher;
 import com.ziio.buddylink.service.*;
 import com.ziio.buddylink.mapper.BlogMapper;
 import com.ziio.buddylink.service.blogInteractionStrategy.BlogInteractionContext;
@@ -87,6 +88,9 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog>
 
     @Resource
     private BlogMapper blogMapper;
+
+    @Resource
+    private MessagePublisher messagePublisher;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -428,14 +432,17 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog>
                 log.error("用户：{} 收藏博客：{} 后，更新博客收藏数失败了！", userId, blogId);
             }
         }
-        // 发送消息,添加收藏消息到消息表
+        // 发送消息,添加收藏消息到数据库
         Message message = new Message();
         message.setFromId(userId);
         message.setToId(blog.getUserId());
         message.setType(0);
         message.setText("收藏了你的博客");
         message.setBlogId(blogId);
-        messageService.addStarMessage(message);
+        messageService.addStarMessage(message); // 直接添加消息，允许重复添加
+        // not important -- 发送到消息队列
+        messagePublisher.sendStarMessage();
+        //
         return (count1 != null && count1 >= 1) && (count2 != null && count2 >= 1);
     }
 
@@ -468,7 +475,6 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog>
             log.error("博客：{} 点赞添加用户：{} 失败了！", blogId, userId);
         }
         // 更新数据库 blog likes 记录
-        // todo 后续改为 MQ 处理
         if (count1 != null && count1 > 0 && count2 != null && count2 > 0) {
             UpdateWrapper<Blog> updateWrapper = new UpdateWrapper<>();
             updateWrapper.setSql("likeNum = likeNum + 1");
@@ -486,6 +492,8 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog>
         message.setText("点赞了你的博客");
         message.setBlogId(blogId);
         messageService.addLikeMessage(message);
+        // no important -- 发送消息到消息队列
+        messagePublisher.sendLikeMessage();
         return (count1 != null && count1 >= 1) && (count2 != null && count2 >= 1);
     }
 

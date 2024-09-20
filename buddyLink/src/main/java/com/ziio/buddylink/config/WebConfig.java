@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class WebConfig {
 
+    // 注册 filter
     @Bean
     public FilterRegistrationBean<HttpSessionFilter> loggingFilter(){
         FilterRegistrationBean<HttpSessionFilter> registrationBean = new FilterRegistrationBean<>();
