@@ -11,6 +11,7 @@ import com.ziio.buddylink.model.domain.User;
 import com.ziio.buddylink.model.request.MessageRequest;
 import com.ziio.buddylink.model.vo.ChatMessageVO;
 import com.ziio.buddylink.model.vo.WebSocketVO;
+import com.ziio.buddylink.publisher.MessagePublisher;
 import com.ziio.buddylink.service.ChatService;
 import com.ziio.buddylink.service.TeamService;
 import com.ziio.buddylink.service.UserService;
@@ -18,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -42,6 +44,7 @@ import static com.ziio.buddylink.constant.UserConstant.USER_LOGIN_STATE;
 @Slf4j
 @ServerEndpoint(value = "/websocket/{userId}/{teamId}" , configurator = HttpSessionConfig.class)
 public class WebSocket {
+
     /**
      * 保证队伍连接信息 , teamId -> userid , webSocket
      */
@@ -81,6 +84,10 @@ public class WebSocket {
      * 团队服务
      */
     private static TeamService teamService;
+    /**
+     * 消息队列服务
+     */
+    private static MessagePublisher messagePublisher;
 
     /**
      * 房间在线人数
@@ -141,6 +148,16 @@ public class WebSocket {
     }
 
     /**
+     * 静态类注入 ，websocket 实例不由 spring 注入
+     *
+     * @param messagePublisher 消息队列发布
+     */
+    @Resource
+    public void setMessagePublisher(MessagePublisher messagePublisher) {
+        WebSocket.messagePublisher = messagePublisher;
+    }
+
+    /**
      * 队伍群内转发消息
      * @param teamId
      * @param message
@@ -164,6 +181,8 @@ public class WebSocket {
      */
     private void sendMessage(String message) throws IOException {
         this.session.getBasicRemote().sendText(message);
+        // 添加消息到消息队列
+        messagePublisher.sendChatMessage();
     }
 
     /**
@@ -420,6 +439,7 @@ public class WebSocket {
             webSocketVos.add(webSocketVO);
         }
         // 这里将用户名单 ， 发送出去 , 就是将更新过后的用户名单发给 all user
+        // todo : 上线检测
         sendAllMessage(JSONUtil.toJsonStr(stringListHashMap));
     }
 
@@ -435,6 +455,8 @@ public class WebSocket {
                     // 加锁，防掉连接
                     synchronized (session) {
                         session.getBasicRemote().sendText(message);
+                        // 添加消息到消息队列
+                        messagePublisher.sendChatMessage();
                     }
                 }
             } catch (Exception e) {
@@ -468,5 +490,7 @@ public class WebSocket {
                 log.error("exception message", e);
             }
         }
+        // 添加消息到消息队列
+        messagePublisher.sendChatMessage();
     }
 }

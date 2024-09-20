@@ -22,6 +22,17 @@ spring:
   elasticsearch:
     uris: http://localhost:9200
 
+  rabbitmq:
+    host: 192.168.72.100 # 你的虚拟机IP // todo : 转换为本地的 localhost
+    port: 5672 # 端口
+    virtual-host: /hmall # 虚拟主机
+    username: hmall # 用户名
+    password: 123 # 密码
+    listener:
+      simple:
+        prefetch: 1 # 每次只消费一个消息
+        acknowledge-mode: auto  # 自动确认模式
+
 server:
   port: 8080
   servlet:
