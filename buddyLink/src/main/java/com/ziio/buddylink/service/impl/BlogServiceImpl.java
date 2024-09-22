@@ -441,7 +441,7 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog>
         message.setBlogId(blogId);
         messageService.addStarMessage(message); // 直接添加消息，允许重复添加
         // not important -- 发送到消息队列
-        messagePublisher.sendStarMessage();
+        messagePublisher.sendStarMessage(userId);
         //
         return (count1 != null && count1 >= 1) && (count2 != null && count2 >= 1);
     }
@@ -493,7 +493,7 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog>
         message.setBlogId(blogId);
         messageService.addLikeMessage(message);
         // no important -- 发送消息到消息队列
-        messagePublisher.sendLikeMessage();
+        messagePublisher.sendLikeMessage(userId);
         return (count1 != null && count1 >= 1) && (count2 != null && count2 >= 1);
     }
 

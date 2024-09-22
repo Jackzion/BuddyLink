@@ -14,7 +14,7 @@
 </template>
 
 <script setup lang="ts">
-import {reactive, ref, toRefs} from 'vue'
+import { ref } from 'vue'
 const showNotify = ref(false);
 const timer = ref();
 const customStyle = {
@@ -33,6 +33,10 @@ const closeNotify = () => {
   clearInterval(timer.value);
 }
 
+// 通过 defineExpose 将 triggerNotify 暴露给父组件
+defineExpose({
+  triggerNotify,
+})
 
 </script>
 

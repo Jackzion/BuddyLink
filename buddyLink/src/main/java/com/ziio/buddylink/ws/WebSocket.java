@@ -67,7 +67,7 @@ public class WebSocket {
     private static final CopyOnWriteArraySet<Session> SESSIONS = new CopyOnWriteArraySet<>();
 
     /**
-     * 会话池
+     * 会话池 , 缓存了 k-v <userId , session>
      * <userId , session>
      */
     private static final Map<String, Session> SESSION_POOL = new HashMap<>();
@@ -180,9 +180,11 @@ public class WebSocket {
      * @param message
      */
     private void sendMessage(String message) throws IOException {
+        User loginUser =  (User) this.httpSession.getAttribute(USER_LOGIN_STATE);
         this.session.getBasicRemote().sendText(message);
         // 添加消息到消息队列
-        messagePublisher.sendChatMessage();
+        // todo: 这里先默认，team 由于难得到 this.session
+        messagePublisher.sendChatMessage(5L,message);
     }
 
     /**
@@ -448,6 +450,7 @@ public class WebSocket {
      * @param message 要广播的消息
      */
     public void sendAllMessage(String message) {
+        User fromUser = (User)httpSession.getAttribute(USER_LOGIN_STATE);
         // 获取所有 活跃的 session
         for (Session session : SESSIONS) {
             try {
@@ -456,7 +459,7 @@ public class WebSocket {
                     synchronized (session) {
                         session.getBasicRemote().sendText(message);
                         // 添加消息到消息队列
-                        messagePublisher.sendChatMessage();
+                        messagePublisher.sendChatMessage(fromUser.getId(),message);
                     }
                 }
             } catch (Exception e) {
@@ -477,20 +480,21 @@ public class WebSocket {
         sendOneMessage(userId, obj.toString());
     }
 
-    private void sendOneMessage(String userId, String string) {
+    private void sendOneMessage(String userId, String message) {
         // 获取 receiver session
         Session userSession = SESSION_POOL.get(userId);
+        User fromUser =(User) httpSession.getAttribute(USER_LOGIN_STATE);
         if(userSession != null && userSession.isOpen()){
             try{
                 // 对 userSession 接受方设置锁 , 避免另一线程尝试关闭连接， 到时候 ， 客户端 session id remove ， 对方就接收不了消息了
                 synchronized (userSession){
-                    userSession.getBasicRemote().sendText(string);
+                    userSession.getBasicRemote().sendText(message);
                 }
             }catch (Exception e){
                 log.error("exception message", e);
             }
         }
         // 添加消息到消息队列
-        messagePublisher.sendChatMessage();
+        messagePublisher.sendChatMessage(fromUser.getId(),message);
     }
 }
