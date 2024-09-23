@@ -2,27 +2,28 @@
   <div>
     <van-notify v-model:show="showNotify" :style="customStyle"  >
       <div>
-        <img class="avatar" src="../assets/star.png" alt="Avatar" />
-        <span>用户名</span>
-        <span>收藏了你的博客</span>
+        <img class="avatar" src="../../assets/star.png" alt="Avatar" />
+        <span class="message">{{ message }}</span>
       </div>
       <van-icon name="cross" class="close-icon" @click="showNotify = false" />
     </van-notify>
-
-    <van-button type="primary" @click="triggerNotify">显示收藏消息</van-button>
   </div>
 </template>
 
 <script setup lang="ts">
-import {reactive, ref, toRefs} from 'vue'
+import {ref} from 'vue'
 const showNotify = ref(false);
 const timer = ref();
 const customStyle = {
-    background: 'rgb(255,231,104)',
+    background: 'rgba(173, 216, 230, 0.8)', // 半透明浅蓝色背景
     borderRadius: '10px',
-    color: 'rgb(0,0,0)',
+    color: '#000',
     padding: '5px',
 };
+interface NotifyProps {
+  message : String,
+}
+withDefaults(defineProps<NotifyProps>(), {})
 
 const triggerNotify = () => {
   showNotify.value = true;
@@ -33,6 +34,10 @@ const closeNotify = () => {
   clearInterval(timer.value);
 }
 
+// 通过 defineExpose 将 triggerNotify 暴露给父组件
+defineExpose({
+  triggerNotify,
+})
 
 </script>
 

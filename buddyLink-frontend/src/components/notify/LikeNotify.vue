@@ -2,14 +2,11 @@
   <div>
     <van-notify v-model:show="showNotify" :style="customStyle"  >
       <div>
-        <img class="avatar" src="../assets/like.png" alt="Avatar" />
-        <span>用户名</span>
-        <span>点赞了你的动态</span>
+        <img class="avatar" src="../../assets/like.png" alt="Avatar" />
+        <span class="message">{{ message }}</span>
       </div>
       <van-icon name="cross" class="close-icon" @click="showNotify = false" />
     </van-notify>
-
-    <van-button type="primary" @click="triggerNotify">显示点赞消息</van-button>
   </div>
 </template>
 
@@ -23,6 +20,11 @@ const customStyle = {
     color: '#fff',
     padding: '5px',
 };
+
+interface NotifyProps {
+  message : String,
+}
+withDefaults(defineProps<NotifyProps>(), {})
 
 const triggerNotify = () => {
   showNotify.value = true;

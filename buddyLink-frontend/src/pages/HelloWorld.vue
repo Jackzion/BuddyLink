@@ -1,80 +1,35 @@
 <template>
-  <div>
-    <h1>SSE Example</h1>
-    <div v-if="message">
-      <p>New Message: {{ message }}</p>
-    </div>
-  </div>
+<!--  <div>-->
+<!--    <h1>SSE Example</h1>-->
+<!--    <div v-if="message">-->
+<!--      <p>New Message: {{ message }}</p>-->
+<!--    </div>-->
+<!--  </div>-->
 <!--  消息弹窗设计测试 -->
-  <like-notify ref = "likeNotify"></like-notify>
-  <star-notify ref = "starNotify"></star-notify>
-  <chat-notify ref = "chatNotify"></chat-notify>
-  <van-button type="primary" @click="test">显示点赞消息</van-button>
+<!--  <like-notify ref = "likeNotify"></like-notify>-->
+<!--  <star-notify ref = "starNotify"></star-notify>-->
+<!--  <chat-notify ref = "chatNotify"></chat-notify>-->
+<!--  <van-button type="primary" @click="test">显示点赞消息</van-button>-->
+
+<!--  <div v-for = "(notify,index) in notifyBox" :key = "index">-->
+<!--    <component-->
+<!--        :is = "notify.type"-->
+<!--        v-bind = "notify.props"-->
+<!--        ref = "notifyRefs"-->
+<!--    >-->
+<!--    </component>-->
+<!--  </div>-->
+<!--  <h1>-->
+<!--    {{notifyBox.length}}-->
+<!--  </h1>-->
+  <notify-box></notify-box>
+
 </template>
 
 <script setup lang = "ts">
-import {onMounted, ref} from "vue";
-import LikeNotify from "../components/LikeNotify.vue";
-import StarNotify from "../components/StarNotify.vue";
-import ChatNotify from "../components/ChatNotify.vue";
-import {showNotify} from "vant";
-import {SseMessageType} from "../enums/SseMessageType.ts";
 
-const likeNotify = ref(null);
-const starNotify = ref(null);
-const chatNotify = ref(null);
 
-const test = () =>{
-  likeNotify.value.triggerNotify();
-}
-
-const message = ref();
-onMounted(() => {
-  // 创建 SSE 连接
-  const eventSource = new EventSource("http://localhost:8080/api/sss");
-
-  // 监听服务器推送的消息
-  eventSource.onmessage = (event) => {
-    // json Str 转为 对象
-    const data = JSON.parse(event.data);
-    if(data.type === SseMessageType.MESSAGE_LIKE){
-      // 弹窗弹出消息
-      showNotify({
-        background: '#00ff98',
-        duration: 1000,
-        message:data.message
-      });
-    }
-    if(data.type === SseMessageType.MESSAGE_STAR){
-      // 弹窗弹出消息
-      showNotify({
-        background: '#f3ff00',
-        duration: 1000,
-        message:data.message
-      });
-    }
-    if(data.type === SseMessageType.MESSAGE_CHAT){
-      // 弹窗弹出消息
-      showNotify({
-        background: '#0081ff',
-        duration: 1000,
-        message:data.message
-      });
-    }
-    // // 弹窗弹出消息
-    // showNotify({
-    //   background: '#00ff98',
-    //   duration: 1000,
-    //   message:event.data
-    // });
-  };
-
-  // 监听错误
-  eventSource.onerror = (error) => {
-    console.error("SSE connection error:", error);
-  };
-})
-
+import NotifyBox from "../components/notify/NotifyBox.vue";
 </script>
 
 

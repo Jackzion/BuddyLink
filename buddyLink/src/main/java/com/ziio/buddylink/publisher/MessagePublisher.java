@@ -20,7 +20,7 @@ public class MessagePublisher {
     @Resource
     private UserService userService;
 
-    // todo : 队列按 topic 分开？ 消息过多可能撑不住
+    // todo : 队列按 topic 分开？ 没有区分各个用户的消息，且没有设置消息存活时间 -- 这样用户不上线应该是看不到消息的
     public void sendStarMessage(Long fromId){
         // 队列名称
         String queueName = "simple.queue";
