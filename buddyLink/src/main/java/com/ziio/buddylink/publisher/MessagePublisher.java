@@ -55,7 +55,7 @@ public class MessagePublisher {
         User fromUser = userService.getById(fromId);
         // 构造 mq Message
         MqMessage mqMessage = new MqMessage();
-        String message = fromUser.getUsername() + " is talking to you ...";
+        String message = fromUser.getUsername() + ":  " + chatMessage;
         mqMessage.setType(MqMessageType.MESSAGE_LIKE);
         mqMessage.setMessage(message);
         String jsonStr = JSONUtil.toJsonStr(mqMessage);

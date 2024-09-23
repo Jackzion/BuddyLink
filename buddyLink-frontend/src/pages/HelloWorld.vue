@@ -18,6 +18,7 @@ import LikeNotify from "../components/LikeNotify.vue";
 import StarNotify from "../components/StarNotify.vue";
 import ChatNotify from "../components/ChatNotify.vue";
 import {showNotify} from "vant";
+import {SseMessageType} from "../enums/SseMessageType.ts";
 
 const likeNotify = ref(null);
 const starNotify = ref(null);
@@ -34,13 +35,38 @@ onMounted(() => {
 
   // 监听服务器推送的消息
   eventSource.onmessage = (event) => {
-    message.value = event.data;
-    // 弹窗弹出消息
-    showNotify({
-      background: '#00ff98',
-      duration: 1000,
-      message:event.data
-    });
+    // json Str 转为 对象
+    const data = JSON.parse(event.data);
+    if(data.type === SseMessageType.MESSAGE_LIKE){
+      // 弹窗弹出消息
+      showNotify({
+        background: '#00ff98',
+        duration: 1000,
+        message:data.message
+      });
+    }
+    if(data.type === SseMessageType.MESSAGE_STAR){
+      // 弹窗弹出消息
+      showNotify({
+        background: '#f3ff00',
+        duration: 1000,
+        message:data.message
+      });
+    }
+    if(data.type === SseMessageType.MESSAGE_CHAT){
+      // 弹窗弹出消息
+      showNotify({
+        background: '#0081ff',
+        duration: 1000,
+        message:data.message
+      });
+    }
+    // // 弹窗弹出消息
+    // showNotify({
+    //   background: '#00ff98',
+    //   duration: 1000,
+    //   message:event.data
+    // });
   };
 
   // 监听错误

@@ -183,8 +183,7 @@ public class WebSocket {
         User loginUser =  (User) this.httpSession.getAttribute(USER_LOGIN_STATE);
         this.session.getBasicRemote().sendText(message);
         // 添加消息到消息队列
-        // todo: 这里先默认，team 由于难得到 this.session
-        messagePublisher.sendChatMessage(5L,message);
+        // todo : 消息队列只对 private chat 有效。。
     }
 
     /**
@@ -458,8 +457,6 @@ public class WebSocket {
                     // 加锁，防掉连接
                     synchronized (session) {
                         session.getBasicRemote().sendText(message);
-                        // 添加消息到消息队列
-                        messagePublisher.sendChatMessage(fromUser.getId(),message);
                     }
                 }
             } catch (Exception e) {
@@ -494,7 +491,9 @@ public class WebSocket {
                 log.error("exception message", e);
             }
         }
+        // todo: 冗余 -- 解析 message ， 找回 text
+        String text = JSONUtil.toBean(message, ChatMessageVO.class).getText();
         // 添加消息到消息队列
-        messagePublisher.sendChatMessage(fromUser.getId(),message);
+        messagePublisher.sendChatMessage(fromUser.getId(),text);
     }
 }

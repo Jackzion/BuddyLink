@@ -23,8 +23,7 @@ public class SpringRabbitListener {
     @RabbitListener(queues = "simple.queue")
     public void listenSimpleQueueMessage(String msg) throws InterruptedException {
         // 向前端推送消息
-        String message = msg + System.currentTimeMillis();
         log.info("ziio 已经收到消息!!");
-        sseController.sendMessageToClients(message);
+        sseController.sendMessageToClients(msg);
     }
 }
