@@ -51,7 +51,7 @@ const emit = defineEmits(['delete-blog']);
 
 // 渲染时先获取 CurrentUser
 onMounted(async () => {
-  currentUser.value = currentUser.value = await getCurrentUser();
+  currentUser.value = await getCurrentUser();
   console.log(currentUser.value?.id);
 });
 

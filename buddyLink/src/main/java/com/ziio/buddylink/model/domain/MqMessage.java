@@ -14,4 +14,7 @@ public class MqMessage {
     // 消息类型 ： 1 - 点赞 ， 2 - 收藏 ， 3 - 聊天
     private Integer type;
 
+    // 消息来源
+    private Long toUserId;
+
 }

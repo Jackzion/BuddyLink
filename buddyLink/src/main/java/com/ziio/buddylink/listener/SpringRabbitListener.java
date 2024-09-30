@@ -1,7 +1,9 @@
 package com.ziio.buddylink.listener;
 
+import cn.hutool.json.JSONUtil;
 import com.google.gson.Gson;
 import com.ziio.buddylink.controller.SseController;
+import com.ziio.buddylink.model.domain.MqMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +26,7 @@ public class SpringRabbitListener {
     public void listenSimpleQueueMessage(String msg) throws InterruptedException {
         // 向前端推送消息
         log.info("ziio 已经收到消息!!");
-        sseController.sendMessageToClients(msg);
+        MqMessage mqMessage = JSONUtil.toBean(msg, MqMessage.class);
+        sseController.sendMessageToClient(msg,mqMessage.getToUserId());
     }
 }

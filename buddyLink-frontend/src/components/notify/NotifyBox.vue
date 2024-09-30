@@ -7,9 +7,6 @@
     >
     </component>
   </div>
-  <h1>
-    {{notifyBox.length}}
-  </h1>
 </template>
 
 <script setup lang = "ts">
@@ -18,14 +15,17 @@ import LikeNotify from "../notify/LikeNotify.vue";
 import StarNotify from "../notify/StarNotify.vue";
 import ChatNotify from "../notify/ChatNotify.vue";
 import {SseMessageType} from "../../enums/SseMessageType.ts";
+import {getCurrentUser} from "../../services/user.ts";
 
 const EXPIRATION_TIME = 3000;  // 组件存活的时间，3秒后销毁
 const notifyRefs = ref([]);  // 子组件引用 , 每放入一个 component ， 就对应放入一个 ref
 const notifyBox = ref([]); // box ， 用于动态创建不同格式的消息弹窗
+const currentUser = ref();
 
-onMounted(() => {
-  // 创建 SSE 连接
-  const eventSource = new EventSource("http://localhost:8080/api/sss");
+onMounted(async () => {
+  currentUser.value = await getCurrentUser();
+  // 创建 SSE 连接 , todo : 换常量 url
+  const eventSource = new EventSource("http://localhost:8080/api/sse?UserId=" + currentUser.value?.id);
 
   // 监听服务器推送的消息
   eventSource.onmessage = (event) => {

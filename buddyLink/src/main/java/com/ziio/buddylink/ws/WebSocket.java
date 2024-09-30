@@ -386,6 +386,7 @@ public class WebSocket {
         // 发送消息
         String toJson = new Gson().toJson(chatMessageVO);
         sendOneMessage(toId.toString(), toJson);
+        messagePublisher.sendChatMessage(fromUser.getId(),text,toId);
         // 更新数据库，同时删除缓存 --- 保证一致性
         saveChat(fromUser.getId(), toId, text, null, chatType);
         chatService.deleteKey(CACHE_CHAT_PRIVATE, fromUser.getId() + "" + toId);
@@ -491,9 +492,6 @@ public class WebSocket {
                 log.error("exception message", e);
             }
         }
-        // todo: 冗余 -- 解析 message ， 找回 text
-        String text = JSONUtil.toBean(message, ChatMessageVO.class).getText();
-        // 添加消息到消息队列
-        messagePublisher.sendChatMessage(fromUser.getId(),text);
+
     }
 }

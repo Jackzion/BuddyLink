@@ -16,12 +16,11 @@ public class MessagePublisher {
 
     @Resource
     private RabbitTemplate rabbitTemplate;
-
     @Resource
     private UserService userService;
 
     // todo : 队列按 topic 分开？ 没有区分各个用户的消息，且没有设置消息存活时间 -- 这样用户不上线应该是看不到消息的
-    public void sendStarMessage(Long fromId){
+    public void sendStarMessage(Long fromId , Long tuId){
         // 队列名称
         String queueName = "simple.queue";
         User fromUser = userService.getById(fromId);
@@ -30,12 +29,13 @@ public class MessagePublisher {
         String message = "Your Blogs is Started by " + fromUser.getUsername();
         mqMessage.setType(MqMessageType.MESSAGE_STAR);
         mqMessage.setMessage(message);
+        mqMessage.setToUserId(tuId);
         String jsonStr = JSONUtil.toJsonStr(mqMessage);
         // 发送消息
         rabbitTemplate.convertAndSend(queueName, jsonStr);
     }
 
-    public void sendLikeMessage(Long fromId){
+    public void sendLikeMessage(Long fromId , Long tuId){
         // 队列名称
         String queueName = "simple.queue";
         User fromUser = userService.getById(fromId);
@@ -44,12 +44,13 @@ public class MessagePublisher {
         String message = "Your Blogs is Liked by " + fromUser.getUsername();
         mqMessage.setType(MqMessageType.MESSAGE_LIKE);
         mqMessage.setMessage(message);
+        mqMessage.setToUserId(tuId);
         String jsonStr = JSONUtil.toJsonStr(mqMessage);
         // 发送消息
         rabbitTemplate.convertAndSend(queueName, jsonStr);
     }
 
-    public void sendChatMessage(Long fromId  , String chatMessage){
+    public void sendChatMessage(Long fromId  , String chatMessage , Long tuId){
         // 队列名称
         String queueName = "simple.queue";
         User fromUser = userService.getById(fromId);
@@ -58,6 +59,7 @@ public class MessagePublisher {
         String message = fromUser.getUsername() + ":  " + chatMessage;
         mqMessage.setType(MqMessageType.MESSAGE_LIKE);
         mqMessage.setMessage(message);
+        mqMessage.setToUserId(tuId);
         String jsonStr = JSONUtil.toJsonStr(mqMessage);
         // 发送消息
         rabbitTemplate.convertAndSend(queueName, jsonStr);

@@ -1,6 +1,7 @@
 <template>
   <!-- 页面标题 + 左右按钮  -->
   <van-sticky>
+    <notify-box></notify-box>
     <van-nav-bar
         :title="title"
         left-text="返回"
@@ -37,6 +38,7 @@ import routes from "../config/route.ts";
 import {onMounted, ref} from "vue";
 import myAxios from "../config/myAxios.ts";
 import {showFailToast} from "vant";
+import NotifyBox from "../components/notify/NotifyBox.vue";
 
 const router = useRouter()
 const DEFAULT_TITLE = "Buddy Link";
