@@ -30,7 +30,7 @@ public class SseController {
         SseEmitter emitter = new SseEmitter();
         emitters.put(UserId,emitter);
         emitter.onCompletion(() -> emitters.remove(UserId));
-//        emitter.onTimeout(() -> emitters.remove(UserId)); 
+//        emitter.onTimeout(() -> emitters.remove(UserId));
         return emitter;
     }
 

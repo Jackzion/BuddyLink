@@ -1,22 +1,19 @@
 package com.ziio.buddylink.controller;
 
-import com.aliyun.oss.model.UserQos;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.ziio.buddylink.common.BaseResponse;
 import com.ziio.buddylink.common.ErrorCode;
 import com.ziio.buddylink.common.ResultUtils;
 import com.ziio.buddylink.constant.UserConstant;
 import com.ziio.buddylink.exception.BusinessException;
+import com.ziio.buddylink.model.domain.User;
 import com.ziio.buddylink.model.request.*;
-import com.ziio.buddylink.model.vo.BlogVO;
 import com.ziio.buddylink.model.vo.SignInInfoVO;
 import com.ziio.buddylink.model.vo.UserInfoVO;
-import com.ziio.buddylink.model.domain.User;
 import com.ziio.buddylink.model.vo.UserVO;
 import com.ziio.buddylink.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.ibatis.executor.statement.StatementHandler;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
